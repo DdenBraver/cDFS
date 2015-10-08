@@ -2,11 +2,11 @@
 
 # cDFS
 
-The **cDFS** module contains DSC resources for configuring Distributed File System Replication and Namespaces.
+The **cDFS** module contains DSC resources for configuring Distributed File System Replication and Namespaces. Currently in this version only Replication folders are supported. Namespaces will be supported in a future release.
 
 ## Installation
 ### Installation if WMF5.0 is Installed
-```powershell	
+```powershell
 Install-Module -Name cDFS -MinimumVersion 1.0.0.0
 ```
 
@@ -70,6 +70,50 @@ This resource is used to configure Replication Group Folder Membership. It is us
 * **DomainName**: The AD domain the Replication Group should created in. Optional.
 
 #### Examples
+Create a DFS Replication Group called Public containing two members, FileServer1 and FileServer2. The Replication Group contains a single folder called Software. A description will be set on the Software folder and it will be set to exclude the directory Temp from replication.
+```powershell
+configuration Sample_cDFSRepGroup
+{
+    Import-DscResource -Module cDFS
+
+    Node $NodeName
+    {
+        cDFSRepGroup RGPublic
+        {
+            GroupName = 'Public'
+            Description = 'Public files for use by all departments'
+            Ensure = 'Present'
+            Members = 'FileServer1','FileServer2'
+            Folders = 'Software'
+        } # End of RGPublic Resource
+
+        cDFSRepGroupFolder RGSoftwareFolder
+        {
+            GroupName = 'Public'
+            FolderName = 'Software'
+            Description = 'DFS Share for storing software installers'
+			DirectoryNameToExclude = 'Temp'
+        } # End of RGPublic Resource
+
+        cDFSRepGroupMembership RGPublicSoftwareFS1
+        {
+            GroupName = 'Public'
+            FolderName = 'Software'
+            ComputerName = 'FileServer1'
+            ContentPath = 'd:\Public\Software'
+        } # End of RGPublicSoftwareFS1 Resource
+
+        cDFSRepGroupMembership RGPublicSoftwareFS2
+        {
+            GroupName = 'Public'
+            FolderName = 'Software'
+            ComputerName = 'FileServer2'
+            ContentPath = 'e:\Data\Public\Software'
+        } # End of RGPublicSoftwareFS2 Resource
+
+    } # End of Node
+} # End of Configuration
+```
 
 ## Versions
 

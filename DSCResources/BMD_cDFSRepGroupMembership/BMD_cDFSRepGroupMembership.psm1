@@ -14,11 +14,10 @@ RepGroupMembershipExistsMessage=DFS Replication Group "{0}" folder "{1}" on "{2}
 RepGroupMembershipMissingError=DFS Replication Group "{0}" folder "{1}" on "{2}" is missing.
 SettingRegGroupMembershipMessage=Setting DFS Replication Group "{0}" folder "{1}" on "{2}".
 RepGroupMembershipUpdatedMessage=DFS Replication Group "{0}" folder "{1}" on "{2}" has has been updated.
-RepGroupFolderMissingError=DFS Replication Group "{0}" folder "{1}" is missing.
 TestingRegGroupMembershipMessage=Testing DFS Replication Group "{0}" folder "{1}" on "{2}".
-RepGroupFolderDescriptionMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect Description. Change required.
-RepGroupFolderFileNameToExcludeMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect FileNameToExclude. Change required.
-RepGroupFolderDirectoryNameToExcludeMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect DirectoryNameToExclude. Change required.
+RepGroupMembershipContentPathMismatchMessage=DFS Replication Group "{0}" folder "{1}" on "{2}" has incorrect ContentPath. Change required.
+RepGroupMembershipStagingPathMismatchMessage=DFS Replication Group "{0}" folder "{1}" on "{2}" has incorrect StagingPath. Change required.
+RepGroupMembershipReadOnlyMismatchMessage=DFS Replication Group "{0}" folder "{1}" on "{2}" has incorrect ReadOnly. Change required.
 '@
 }
 
@@ -193,55 +192,55 @@ function Test-TargetResource
 
     Write-Verbose -Message ( @(
         "$($MyInvocation.MyCommand): "
-        $($LocalizedData.TestingRegGroupFolderMessage) -f $GroupName,$FolderName,$DomainName
+        $($LocalizedData.TestingRegGroupMembershipMessage) `
+            -f $GroupName,$FolderName,$ComputerName,$DomainName
         ) -join '' )
 
-    # Lookup the existing Replication Group Folder
-    $Splat = @{ GroupName = $GroupName; FolderName = $FolderName }
+    # Lookup the existing Replication Group
+    $Splat = @{ GroupName = $GroupName; ComputerName = $ComputerName }
     if ($DomainName) {
         $Splat += @{ DomainName = $DomainName }
     }
-    $RepGroupFolder = Get-DfsReplicatedFolder @Splat -ErrorAction Stop
-
-    if ($RepGroupFolder) {
+    $RepGroupMembership = Get-DfsrMembership @Splat -ErrorAction Stop `
+        | Where-Object { $_.FolderName -eq $FolderName }
+    if ($RepGroupMembership) {
         # The rep group folder is found
         Write-Verbose -Message ( @(
             "$($MyInvocation.MyCommand): "
-            $($LocalizedData.RepGroupMembershipExistsMessage) -f $GroupName,$DomainName
+            $($LocalizedData.RepGroupMembershipExistsMessage) `
+                -f $GroupName,$FolderName,$ComputerName,$DomainName
             ) -join '' )
 
-        # Check the description
-        if (($Description -ne $null) -and ($RepGroupFolder.Description -ne $Description)) {
+        # Check the ContentPath
+        if (($ContentPath -ne $null) -and ($RepGroupMembership.ContentPath -ne $ContentPath)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
-                $($LocalizedData.RepGroupFolderDescriptionMismatchMessage) -f $GroupName,$FolderName,$DomainName
+                $($LocalizedData.RepGroupMembershipContentPathMismatchMessage) `
+                    -f $GroupName,$FolderName,$ComputerName,$DomainName
                 ) -join '' )
             $desiredConfigurationMatch = $false
         }
         
-        # Check the FileNameToExclude
-        if (($FileNameToExclude -ne $null) `
-            -and ((Compare-Object `
-                -ReferenceObject  $RepGroupFolder.FileNameToExclude `
-                -DifferenceObject $FileNameToExclude).Count -ne 0)) {
+        # Check the StagingPath
+        if (($StagingPath -ne $null) -and ($RepGroupMembership.StagingPath -ne $StagingPath)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
-                $($LocalizedData.RepGroupFolderFileNameToExcludeMismatchMessage) -f $GroupName,$FolderName,$DomainName
+                $($LocalizedData.RepGroupMembershipStagingPathMismatchMessage) `
+                    -f $GroupName,$FolderName,$ComputerName,$DomainName
                 ) -join '' )
             $desiredConfigurationMatch = $false
         }
 
-        # Check the DirectoryNameToExclude
-        if (($DirectoryNameToExclude -ne $null) `
-            -and ((Compare-Object `
-                -ReferenceObject  $RepGroupFolder.DirectoryNameToExclude `
-                -DifferenceObject $DirectoryNameToExclude).Count -ne 0)) {
+        # Check the ReadOnly
+        if (($ReadOnly -ne $null) -and ($RepGroupMembership.ReadOnly -ne $ReadOnly)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
-                $($LocalizedData.RepGroupFolderDirectoryNameToExcludeMismatchMessage) -f $GroupName,$FolderName,$DomainName
+                $($LocalizedData.RepGroupMembershipReadOnlyMismatchMessage) `
+                    -f $GroupName,$FolderName,$ComputerName,$DomainName
                 ) -join '' )
             $desiredConfigurationMatch = $false
         }
+
     } else {
         # The Rep Group membership doesn't exist
         $errorId = 'RegGroupMembershipMissingError'

@@ -43,7 +43,8 @@ function Get-TargetResource
     
     Write-Verbose -Message ( @(
         "$($MyInvocation.MyCommand): "
-        $($LocalizedData.GettingRepGroupFolderMessage) -f $GroupName,$FolderName,$DomainName
+        $($LocalizedData.GettingRepGroupFolderMessage) `
+            -f $GroupName,$FolderName,$DomainName
         ) -join '' )
 
     # Lookup the existing Replication Group
@@ -56,7 +57,8 @@ function Get-TargetResource
     if ($RepGroupFolder) {
         Write-Verbose -Message ( @(
             "$($MyInvocation.MyCommand): "
-            $($LocalizedData.RepGroupFolderExistsMessage) -f $GroupName,$FolderName,$DomainName
+            $($LocalizedData.RepGroupFolderExistsMessage) `
+                -f $GroupName,$FolderName,$DomainName
             ) -join '' )
         $returnValue += @{
             Description = $RepGroupFolder.Description
@@ -68,7 +70,8 @@ function Get-TargetResource
         # The Rep Group folder doesn't exist
         $errorId = 'RegGroupFolderMissingError'
         $errorCategory = [System.Management.Automation.ErrorCategory]::InvalidOperation
-        $errorMessage = $($LocalizedData.RepGroupFolderMissingError) -f $GroupName,$FolderName,$DomainName
+        $errorMessage = $($LocalizedData.RepGroupFolderMissingError) `
+            -f $GroupName,$FolderName,$DomainName
         $exception = New-Object -TypeName System.InvalidOperationException `
             -ArgumentList $errorMessage
         $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord `
@@ -110,7 +113,8 @@ function Set-TargetResource
 
     Write-Verbose -Message ( @(
         "$($MyInvocation.MyCommand): "
-        $($LocalizedData.SettingRegGroupFolderMessage) -f $GroupName,$FolderName,$DomainName
+        $($LocalizedData.SettingRegGroupFolderMessage) `
+            -f $GroupName,$FolderName,$DomainName
         ) -join '' )
 
     # Lookup the existing Replication Group Folder
@@ -133,7 +137,8 @@ function Set-TargetResource
 
     Write-Verbose -Message ( @(
         "$($MyInvocation.MyCommand): "
-        $($LocalizedData.RepGroupFolderUpdatedMessage) -f $GroupName,$FolderName,$DomainName
+        $($LocalizedData.RepGroupFolderUpdatedMessage) `
+            -f $GroupName,$FolderName,$DomainName
         ) -join '' )
 
 } # Set-TargetResource
@@ -172,7 +177,8 @@ function Test-TargetResource
 
     Write-Verbose -Message ( @(
         "$($MyInvocation.MyCommand): "
-        $($LocalizedData.TestingRegGroupFolderMessage) -f $GroupName,$FolderName,$DomainName
+        $($LocalizedData.TestingRegGroupFolderMessage) `
+            -f $GroupName,$FolderName,$DomainName
         ) -join '' )
 
     # Lookup the existing Replication Group Folder
@@ -186,14 +192,16 @@ function Test-TargetResource
         # The rep group folder is found
         Write-Verbose -Message ( @(
             "$($MyInvocation.MyCommand): "
-            $($LocalizedData.RepGroupFolderExistsMessage) -f $GroupName,$DomainName
+            $($LocalizedData.RepGroupFolderExistsMessage) `
+                -f $GroupName,$FolderName,$DomainName
             ) -join '' )
 
         # Check the description
         if (($Description -ne $null) -and ($RepGroupFolder.Description -ne $Description)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
-                $($LocalizedData.RepGroupFolderDescriptionMismatchMessage) -f $GroupName,$FolderName,$DomainName
+                $($LocalizedData.RepGroupFolderDescriptionMismatchMessage) `
+                    -f $GroupName,$FolderName,$DomainName
                 ) -join '' )
             $desiredConfigurationMatch = $false
         }
@@ -205,7 +213,8 @@ function Test-TargetResource
                 -DifferenceObject $FileNameToExclude).Count -ne 0)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
-                $($LocalizedData.RepGroupFolderFileNameToExcludeMismatchMessage) -f $GroupName,$FolderName,$DomainName
+                $($LocalizedData.RepGroupFolderFileNameToExcludeMismatchMessage) `
+                    -f $GroupName,$FolderName,$DomainName
                 ) -join '' )
             $desiredConfigurationMatch = $false
         }
@@ -217,7 +226,8 @@ function Test-TargetResource
                 -DifferenceObject $DirectoryNameToExclude).Count -ne 0)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
-                $($LocalizedData.RepGroupFolderDirectoryNameToExcludeMismatchMessage) -f $GroupName,$FolderName,$DomainName
+                $($LocalizedData.RepGroupFolderDirectoryNameToExcludeMismatchMessage) `
+                    -f $GroupName,$FolderName,$DomainName
                 ) -join '' )
             $desiredConfigurationMatch = $false
         }
@@ -225,7 +235,8 @@ function Test-TargetResource
         # The Rep Group folder doesn't exist
         $errorId = 'RegGroupFolderMissingError'
         $errorCategory = [System.Management.Automation.ErrorCategory]::InvalidOperation
-        $errorMessage = $($LocalizedData.RepGroupFolderMissingError) -f $GroupName,$FolderName,$DomainName
+        $errorMessage = $($LocalizedData.RepGroupFolderMissingError) `
+            -f $GroupName,$FolderName,$DomainName
         $exception = New-Object -TypeName System.InvalidOperationException `
             -ArgumentList $errorMessage
         $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord `

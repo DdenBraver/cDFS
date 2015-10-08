@@ -9,8 +9,16 @@ configuration Sample_cDFSRepGroup
             GroupName = 'Public'
             Description = 'Public files for use by all departments'
             Ensure = 'Present'
-            Members = 'FileServer1,FileServer2'
+            Members = 'FileServer1','FileServer2'
             Folders = 'Software'
+        } # End of RGPublic Resource
+
+        cDFSRepGroupFolder RGSoftwareFolder
+        {
+            GroupName = 'Public'
+            FolderName = 'Software'
+            Description = 'DFS Share for storing software installers'
+			DirectoryNameToExclude = 'Temp'
         } # End of RGPublic Resource
 
         cDFSRepGroupMembership RGPublicSoftwareFS1
