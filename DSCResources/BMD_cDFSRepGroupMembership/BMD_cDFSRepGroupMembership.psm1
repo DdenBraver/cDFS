@@ -43,22 +43,23 @@ function Get-TargetResource
         [String]
         $FolderName,
 
+        [parameter(Mandatory = $true)]
+        [String]
+        $ComputerName,
+
         [String]
         $DomainName
     )
     
     Write-Verbose -Message ( @(
         "$($MyInvocation.MyCommand): "
-        $($LocalizedData.GettingRepGroupFolderMessage) -f $GroupName,$FolderName,$DomainName
+        $($LocalizedData.GettingRepGroupMembershipMessage) `
+        -f $GroupName,$FolderName,$ComputerName,$DomainName
         ) -join '' )
 
-    $returnValue = @{
-        GroupName = $GroupName
-        FolderName = $FolderName
-    }
-
     # Lookup the existing Replication Group
-    $Splat = @{ GroupName = $GroupName; FolderName = $FolderName }
+    $Splat = @{ GroupName = $GroupName; FolderName = $FolderName; ComputerName = $ComputerName }
+    $returnValue = $Splat
     if ($DomainName) {
         $Splat += @{ DomainName = $DomainName }
     }
@@ -104,6 +105,10 @@ function Set-TargetResource
         [parameter(Mandatory = $true)]
         [String]
         $FolderName,
+
+        [parameter(Mandatory = $true)]
+        [String]
+        $ComputerName,
 
         [String]
         $Description,
@@ -207,6 +212,10 @@ function Test-TargetResource
         [parameter(Mandatory = $true)]
         [String]
         $FolderName,
+
+        [parameter(Mandatory = $true)]
+        [String]
+        $ComputerName,
 
         [String]
         $Description,

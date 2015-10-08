@@ -51,13 +51,9 @@ function Get-TargetResource
         $($LocalizedData.GettingRepGroupFolderMessage) -f $GroupName,$FolderName,$DomainName
         ) -join '' )
 
-    $returnValue = @{
-        GroupName = $GroupName
-        FolderName = $FolderName
-    }
-
     # Lookup the existing Replication Group
     $Splat = @{ GroupName = $GroupName; FolderName = $FolderName }
+    $returnValue = $splat.Clone()
     if ($DomainName) {
         $Splat += @{ DomainName = $DomainName }
     }
