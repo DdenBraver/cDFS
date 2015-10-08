@@ -59,19 +59,19 @@ InModuleScope $DSCResourceName {
         [PSObject]@{
             GroupName = $Global:RepGroup.GroupName
             DomainName = $Global:RepGroup.DomainName
-            ComputerName = 'FileServer1'
+            ComputerName = $Global:RepGroup.Members[0]
         },
         [PSObject]@{
             GroupName = $Global:RepGroup.GroupName
             DomainName = $Global:RepGroup.DomainName
-            ComputerName = 'FileServer2'
+            ComputerName = $Global:RepGroup.Members[1]
         }
     )
     $Global:MockRepGroupFolder = @(
         [PSObject]@{
             GroupName = $Global:RepGroup.GroupName
             DomainName = $Global:RepGroup.DomainName
-            FolderName = 'Folder1'
+            FolderName = $Global:RepGroup.Folders[0]
             Description = 'Description 1'
             FileNameToExclude = @('~*','*.bak','*.tmp')
             DirectoryNameToExclude = @()
@@ -79,12 +79,22 @@ InModuleScope $DSCResourceName {
         [PSObject]@{
             GroupName = $Global:RepGroup.GroupName
             DomainName = $Global:RepGroup.DomainName
-            FolderName = 'Folder2'
+            FolderName = $Global:RepGroup.Folders[1]
             Description = 'Description 2'
             FileNameToExclude = @('~*','*.bak','*.tmp')
             DirectoryNameToExclude = @()
         }
     )
+    $Global:MockRepGroupMembership = [PSObject]@{
+        GroupName = $Global:RepGroup.GroupName
+        DomainName = $Global:RepGroup.DomainName
+        FolderName = $Global:RepGroup.Folders[0]
+        ComputerName = $Global:RepGroup.ComputerName
+        ContentPath = 'd:\public\software\'
+        StagingPath = 'd:\public\software\DfsrPrivate\Staging\'
+        ConflictAndDeletedPath = 'd:\public\software\DfsrPrivate\ConflictAndDeleted\'
+        ReadOnly = $False
+    }
 
 ######################################################################################
 

@@ -18,6 +18,17 @@ To confirm installation:
 
     Run Get-DSCResource to see that cDFS is among the DSC Resources listed 
 
+
+## Important Information
+### DFSR Module
+This DSC Resource requires that the DFSR PowerShell module is installed onto any computer this resource will be used on. This module is installed as part of RSAT tools or RSAT-DFS-Mgmt-Con Windows Feature in Windows Server 2012 R2.
+However, this will automatically convert a Server Core installation into one containing the managment tools, which may not be ideal. There may work arounds for this, such as manually installing this module onto the Server Core.
+Because this DSC Resource actually only configures information within the AD, it is only required that this resource is run on a computer that is registered in AD. It doesn't need to be run on one of the File Servers participating
+in the Distributed File System or Namespace.
+
+### Run As
+Because this resource is configuring information within Active Directory, the **PSDSCRunAsCredential** must be used with a credential of a domain user that can work with DFS information.
+
 ## Contributing
 Please check out common DSC Resources [contributing guidelines](https://github.com/PowerShell/DscResource.Kit/blob/master/CONTRIBUTING.md).
 

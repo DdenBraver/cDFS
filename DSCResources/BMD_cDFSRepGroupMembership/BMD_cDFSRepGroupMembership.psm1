@@ -9,17 +9,17 @@ data LocalizedData
 {
     # culture="en-US"
     ConvertFrom-StringData -StringData @'
-GettingRepGroupFolderMessage=Getting DFS Replication Group Folder "{0}" folder "{1}".
-RepGroupFolderExistsMessage=DFS Replication Group "{0}" folder "{1}" exists.
-RepGroupFolderDoesNotExistMessage=DFS Replication Group "{0}" folder "{1}" does not exist.
-SettingRegGroupFolderMessage=Setting DFS Replication Group Folder "{0}" folder "{1}".
+GettingRepGroupMembershipMessage=Getting DFS Replication Group "{0}" folder "{1}" on "{2}".
+RepGroupMembershipExistsMessage=DFS Replication Group "{0}" folder "{1}" on "{2}" exists.
+RepGroupMembershipMissingError=DFS Replication Group "{0}" folder "{1}" on "{2}" is missing.
+SettingRegGroupMembershipMessage=Setting DFS Replication Group "{0}" folder "{1}" on "{2}".
 RepGroupExistsMessage=DFS Replication Group "{0}" folder "{1}" exists.
 RepGroupFolderDescriptionUpdateMessage=DFS Replication Group "{0}" folder "{1}" has incorrect Description. Updating.
 RepGroupFolderFileNameToExcludeUpdateMessage=DFS Replication Group "{0}" folder "{1}" has incorrect FileNameToExclude. Updating.
 RepGroupFolderDirectoryNameToExcludeUpdateMessage=DFS Replication Group "{0}" folder "{1}" has incorrect DirectoryNameToExclude. Updating.
 RepGroupFolderUpdatedMessage=DFS Replication Group "{0}" folder "{1}" has has been updated.
 RepGroupFolderMissingError=DFS Replication Group "{0}" folder "{1}" is missing.
-TestingRegGroupFolderMessage=Testing DFS Replication Group Folder "{0}" folder "{1}".
+TestingRegGroupMembershipMessage=Testing DFS Replication Group "{0}" folder "{1}" on "{2}".
 RepGroupFolderDescriptionMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect Description. Change required.
 RepGroupFolderFileNameToExcludeMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect FileNameToExclude. Change required.
 RepGroupFolderDirectoryNameToExcludeMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect DirectoryNameToExclude. Change required.
@@ -54,32 +54,37 @@ function Get-TargetResource
     Write-Verbose -Message ( @(
         "$($MyInvocation.MyCommand): "
         $($LocalizedData.GettingRepGroupMembershipMessage) `
-        -f $GroupName,$FolderName,$ComputerName,$DomainName
+            -f $GroupName,$FolderName,$ComputerName,$DomainName
         ) -join '' )
 
     # Lookup the existing Replication Group
-    $Splat = @{ GroupName = $GroupName; FolderName = $FolderName; ComputerName = $ComputerName }
+    $Splat = @{ GroupName = $GroupName; ComputerName = $ComputerName }
     $returnValue = $Splat
     if ($DomainName) {
         $Splat += @{ DomainName = $DomainName }
     }
-    $RepGroupFolder = Get-DfsReplicatedFolder @Splat -ErrorAction Stop
-    if ($RepGroupFolder) {
+    $returnValue += @{ FolderName = $FolderName }
+    $RepGroupMembership = Get-DfsrMembership @Splat -ErrorAction Stop `
+        | Where-Object { $_.FolderName -eq $FolderName }
+    if ($RepGroupMembership) {
         Write-Verbose -Message ( @(
             "$($MyInvocation.MyCommand): "
-            $($LocalizedData.RepGroupFolderExistsMessage) -f $GroupName,$FolderName,$DomainName
+            $($LocalizedData.RepGroupMembershipExistsMessage) `
+                -f $GroupName,$FolderName,$ComputerName,$DomainName
             ) -join '' )
         $returnValue += @{
-            Description = $RepGroupFolder.Description
-            FilenameToExclude = $RepGroupFolder.FilenameToExclude
-            DirectoryNameToExclude = $RepGroupFolder.DirectoryNameToExclude
-            DomainName = $RepGroupFolder.DomainName
+            ContentPath = $RepGroupMembership.ContentPath
+            StagingPath = $RepGroupMembership.StagingPath
+            ConflictAndDeletedPath = $RepGroupMembership.ConflictAndDeletedPath
+            ReadOnly = $RepGroupMembership.ReadOnly
+            DomainName = $RepGroupMembership.DomainName
         }
     } Else {       
         # The Rep Group folder doesn't exist
-        $errorId = 'RegGroupFolderMissingError'
+        $errorId = 'RegGroupMembershipMissingError'
         $errorCategory = [System.Management.Automation.ErrorCategory]::InvalidOperation
-        $errorMessage = $($LocalizedData.RepGroupFolderMissingError) -f $GroupName,$FolderName,$DomainName
+        $errorMessage = $($LocalizedData.RepGroupMembershipMissingError) `
+            -f $GroupName,$FolderName,$ComputerName,$DomainName
         $exception = New-Object -TypeName System.InvalidOperationException `
             -ArgumentList $errorMessage
         $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord `
@@ -111,13 +116,16 @@ function Set-TargetResource
         $ComputerName,
 
         [String]
-        $Description,
+        $ContentPath,
 
-        [String[]]
-        $FileNameToExclude,
+        [String]
+        $StagingPath,
 
-        [String[]]
-        $DirectoryNameToExclude,
+        [String]
+        $ConflictAndDeletedPath,
+
+        [Boolean]
+        $ReadOnly,
 
         [String]
         $DomainName
@@ -218,13 +226,16 @@ function Test-TargetResource
         $ComputerName,
 
         [String]
-        $Description,
+        $ContentPath,
 
-        [String[]]
-        $FileNameToExclude,
+        [String]
+        $StagingPath,
 
-        [String[]]
-        $DirectoryNameToExclude,
+        [String]
+        $ConflictAndDeletedPath,
+
+        [Boolean]
+        $ReadOnly,
 
         [String]
         $DomainName

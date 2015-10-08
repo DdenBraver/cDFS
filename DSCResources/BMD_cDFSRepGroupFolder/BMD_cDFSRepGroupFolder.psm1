@@ -8,17 +8,16 @@ data LocalizedData
 {
     # culture="en-US"
     ConvertFrom-StringData -StringData @'
-GettingRepGroupFolderMessage=Getting DFS Replication Group Folder "{0}" folder "{1}".
+GettingRepGroupFolderMessage=Getting DFS Replication Group "{0}" folder "{1}".
 RepGroupFolderExistsMessage=DFS Replication Group "{0}" folder "{1}" exists.
-RepGroupFolderDoesNotExistMessage=DFS Replication Group "{0}" folder "{1}" does not exist.
-SettingRegGroupFolderMessage=Setting DFS Replication Group Folder "{0}" folder "{1}".
+RepGroupFolderMissingError=DFS Replication Group "{0}" folder "{1}" is missing.
+SettingRegGroupFolderMessage=Setting DFS Replication Group "{0}" folder "{1}".
 RepGroupExistsMessage=DFS Replication Group "{0}" folder "{1}" exists.
 RepGroupFolderDescriptionUpdateMessage=DFS Replication Group "{0}" folder "{1}" has incorrect Description. Updating.
 RepGroupFolderFileNameToExcludeUpdateMessage=DFS Replication Group "{0}" folder "{1}" has incorrect FileNameToExclude. Updating.
 RepGroupFolderDirectoryNameToExcludeUpdateMessage=DFS Replication Group "{0}" folder "{1}" has incorrect DirectoryNameToExclude. Updating.
 RepGroupFolderUpdatedMessage=DFS Replication Group "{0}" folder "{1}" has has been updated.
-RepGroupFolderMissingError=DFS Replication Group "{0}" folder "{1}" is missing.
-TestingRegGroupFolderMessage=Testing DFS Replication Group Folder "{0}" folder "{1}".
+TestingRegGroupFolderMessage=Testing DFS Replication Group "{0}" folder "{1}".
 RepGroupFolderDescriptionMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect Description. Change required.
 RepGroupFolderFileNameToExcludeMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect FileNameToExclude. Change required.
 RepGroupFolderDirectoryNameToExcludeMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect DirectoryNameToExclude. Change required.
