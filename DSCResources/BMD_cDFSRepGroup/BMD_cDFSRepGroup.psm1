@@ -1,7 +1,7 @@
 #######################################################################################
-#  cDFSRepGroup : DSC Resource This resource is used to create, edit or remove DFS
-#  Replication Groups. If used to create a Replcation Group it should be combined with
-#  the cDFSRepGroupFolder and cDFSRepGroupMembership resources.
+#  cDFSRepGroup :This resource is used to create, edit or remove DFS Replication
+#  Groups. If used to create a Replcation Group it should be combined with the
+#  cDFSRepGroupMembership resources.
 #######################################################################################
  
 data LocalizedData

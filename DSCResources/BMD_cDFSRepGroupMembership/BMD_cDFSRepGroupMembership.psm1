@@ -1,35 +1,34 @@
 #######################################################################################
-#  cWSManListener : DSC Resource that will set/test/get the WS-Man Listerner on a 
-#  specified port.
+#  cDFSRepGroupMembership : This resource is used to configure Replication Group Folder
+#  Membership. It is usually used to set the **ContentPath** for each Replication Group
+#  folder on each Member computer. It can also be used to set additional properties of
+#  the Membership.
 #######################################################################################
  
 data LocalizedData
 {
     # culture="en-US"
     ConvertFrom-StringData -StringData @'
-GettingListenerMessage=Getting Listener.
-ListenerExistsMessage={0} Listener exists.
-ListenerDoesNotExistMessage={0} Listener does not exist.
-SettingListenerMessage=Setting Listener.
-EnsureListenerExistsMessage=Ensuring {0} Listener on port {1} exists.
-EnsureListenerDoesNotExistMessage=Ensuring {0} Listener on port {1} does not exist.
-ListenerExistsRemoveMessage={0} Listener on port {1} exists. Removing.
-ListenerOnPortDoesNotExistMessage={0} Listener on port {1} does not exist.
-CreatingListenerMessage=Creating {0} Listener on port {1}.
-ListenerCreateFailNoCertError=Failed to create {0} Listener on port {1} because a applicable certificate could not be found.
-TestingListenerMessage=Testing Listener.
-ListenerOnWrongPortMessage={0} Listener is on port {1}, should be on {2}. Change required.
-ListenerOnWrongAddressMessage={0} Listener is bound to {1}, should be {2}. Change required.
-ListenerDoesNotExistButShouldMessage={0} Listener does not exist but should. Change required.
-ListenerExistsButShouldNotMessage={0} Listener exists but should not. Change required.
-ListenerDoesNotExistAndShouldNotMessage={0} Listener does not exist and should not. Change not required.
+GettingRepGroupFolderMessage=Getting DFS Replication Group Folder "{0}" folder "{1}".
+RepGroupFolderExistsMessage=DFS Replication Group "{0}" folder "{1}" exists.
+RepGroupFolderDoesNotExistMessage=DFS Replication Group "{0}" folder "{1}" does not exist.
+SettingRegGroupFolderMessage=Setting DFS Replication Group Folder "{0}" folder "{1}".
+RepGroupExistsMessage=DFS Replication Group "{0}" folder "{1}" exists.
+RepGroupFolderDescriptionUpdateMessage=DFS Replication Group "{0}" folder "{1}" has incorrect Description. Updating.
+RepGroupFolderFileNameToExcludeUpdateMessage=DFS Replication Group "{0}" folder "{1}" has incorrect FileNameToExclude. Updating.
+RepGroupFolderDirectoryNameToExcludeUpdateMessage=DFS Replication Group "{0}" folder "{1}" has incorrect DirectoryNameToExclude. Updating.
+RepGroupFolderUpdatedMessage=DFS Replication Group "{0}" folder "{1}" has has been updated.
+RepGroupFolderMissingError=DFS Replication Group "{0}" folder "{1}" is missing.
+TestingRegGroupFolderMessage=Testing DFS Replication Group Folder "{0}" folder "{1}".
+RepGroupFolderDescriptionMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect Description. Change required.
+RepGroupFolderFileNameToExcludeMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect FileNameToExclude. Change required.
+RepGroupFolderDirectoryNameToExcludeMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect DirectoryNameToExclude. Change required.
 '@
 }
 
 
 ######################################################################################
 # The Get-TargetResource cmdlet.
-# This function will return the details of a Listener on the specified Port.
 ######################################################################################
 function Get-TargetResource
 {
@@ -37,47 +36,55 @@ function Get-TargetResource
     param
     (
         [parameter(Mandatory = $true)]
-        [ValidateSet('HTTP','HTTPS')]
         [String]
-        $Transport,
+        $GroupName,
 
         [parameter(Mandatory = $true)]
-        [ValidateSet('Present','Absent')]
         [String]
-        $Ensure
+        $FolderName,
+
+        [String]
+        $DomainName
     )
     
     Write-Verbose -Message ( @(
         "$($MyInvocation.MyCommand): "
-        $($LocalizedData.GettingListenerMessage)
+        $($LocalizedData.GettingRepGroupFolderMessage) -f $GroupName,$FolderName,$DomainName
         ) -join '' )
 
     $returnValue = @{
-        Transport = $Transport
+        GroupName = $GroupName
+        FolderName = $FolderName
     }
 
-    # Lookup the existing Listener
-    $Listeners = Get-Listener -Transport $Transport
-    if ($Listeners) {
+    # Lookup the existing Replication Group
+    $Splat = @{ GroupName = $GroupName; FolderName = $FolderName }
+    if ($DomainName) {
+        $Splat += @{ DomainName = $DomainName }
+    }
+    $RepGroupFolder = Get-DfsReplicatedFolder @Splat -ErrorAction Stop
+    if ($RepGroupFolder) {
         Write-Verbose -Message ( @(
             "$($MyInvocation.MyCommand): "
-            $($LocalizedData.ListenerExistsMessage) -f $Transport
+            $($LocalizedData.RepGroupFolderExistsMessage) -f $GroupName,$FolderName,$DomainName
             ) -join '' )
         $returnValue += @{
-            Ensure = 'Present'
-            Port = $Listeners.Port
-            Address = $Listeners.Address
-            HostName = $Listeners.HostName
-            Enabled = $Listeners.Enabled
-            URLPrefix = $Listeners.URLPrefix
-            CertificateThumbprint = $Listeners.CertificateThumbprint
-            }
+            Description = $RepGroupFolder.Description
+            FilenameToExclude = $RepGroupFolder.FilenameToExclude
+            DirectoryNameToExclude = $RepGroupFolder.DirectoryNameToExclude
+            DomainName = $RepGroupFolder.DomainName
+        }
     } Else {       
-        Write-Verbose -Message ( @(
-            "$($MyInvocation.MyCommand): "
-            $($LocalizedData.ListenerDoesNotExistMessage) -f $Transport
-            ) -join '' )
-        $returnValue += @{ Ensure = 'Absent' }
+        # The Rep Group folder doesn't exist
+        $errorId = 'RegGroupFolderMissingError'
+        $errorCategory = [System.Management.Automation.ErrorCategory]::InvalidOperation
+        $errorMessage = $($LocalizedData.RepGroupFolderMissingError) -f $GroupName,$FolderName,$DomainName
+        $exception = New-Object -TypeName System.InvalidOperationException `
+            -ArgumentList $errorMessage
+        $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord `
+            -ArgumentList $exception, $errorId, $errorCategory, $null
+
+        $PSCmdlet.ThrowTerminatingError($errorRecord)
     }
 
     $returnValue
@@ -85,161 +92,108 @@ function Get-TargetResource
 
 ######################################################################################
 # The Set-TargetResource cmdlet.
-# This function will configure (or remove) a WS-Man Listener on the specified port
 ######################################################################################
 function Set-TargetResource
 {
     param
     (
         [parameter(Mandatory = $true)]
-        [ValidateSet('HTTP','HTTPS')]
         [String]
-        $Transport,
+        $GroupName,
 
         [parameter(Mandatory = $true)]
-        [ValidateSet('Present','Absent')]
         [String]
-        $Ensure,
-
-        [UInt16]
-        $Port,
+        $FolderName,
 
         [String]
-        $Address = '*',
+        $Description,
+
+        [String[]]
+        $FileNameToExclude,
+
+        [String[]]
+        $DirectoryNameToExclude,
 
         [String]
-        $Issuer,
-
-        [ValidateSet('Both','FQDNOnly','NameOnly')]
-        [String]
-        $SubjectFormat = 'Both',
-
-        [Boolean]
-        $MatchAlternate
+        $DomainName
     )
 
     Write-Verbose -Message ( @(
         "$($MyInvocation.MyCommand): "
-        $($LocalizedData.SettingListenerMessage)
+        $($LocalizedData.SettingRegGroupFolderMessage) -f $GroupName,$FolderName,$DomainName
         ) -join '' )
 
-    # Lookup the existing Listener
-    $Listeners = Get-Listener -Transport $Transport
+    # Lookup the existing Replication Group Folder
+    $Splat = @{ GroupName = $GroupName; FolderName = $FolderName }
+    if ($DomainName) {
+        $Splat += @{ DomainName = $DomainName }
+    }
+    $RepGroupFolder = Get-DfsReplicatedFolder @Splat -ErrorAction Stop
 
-    # Get the default port for the transport if none was provided
-    $Port = Get-DefaultPort -Transport $Transport -Port $Port
-
-    if ($Ensure -eq 'Present') {
-        # The listener should exist
+    if ($RepGroupFolder) {
+        # The rep group folder is found
         Write-Verbose -Message ( @(
             "$($MyInvocation.MyCommand): "
-            $($LocalizedData.EnsureListenerExistsMessage) -f $Transport,$Port
+            $($LocalizedData.RepGroupExistsMessage) -f $GroupName,$FolderName,$DomainName
             ) -join '' )
-        if ($Listeners) {
-            # The Listener exists already - delete it
+
+        # Check the description
+        if (($Description -ne $null) -and ($RepGroupFolder.Description -ne $Description)) {
+            $Splat += @{ Description = $Description }
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
-                $($LocalizedData.ListenerExistsRemoveMessage) -f $Transport,$Port
+                $($LocalizedData.RepGroupFolderDescriptionUpdateMessage) -f $GroupName,$FolderName,$DomainName
                 ) -join '' )
-            Remove-WSManInstance `
-                -ResourceURI winrm/config/Listener `
-                -SelectorSet @{ Transport=$Listeners.Transport;Address=$Listeners.Address }
-        } else {
-            Write-Verbose -Message ( @(
-                "$($MyInvocation.MyCommand): "
-                $($LocalizedData.ListenerOnPortDoesNotExistMessage) -f $Transport,$Port
-                ) -join '' )
-            # Ths listener doesn't exist - do nothing
         }
-        # Create the listener
-        if ($Transport -eq 'HTTPS') {
-            [String] $Thumbprint = ''
-            # First try and find a certificate that is used to the FQDN of the machine
-            if ($SubjectFormat -in 'Both','FQDNOnly') {
-                [String] $HostName = [System.Net.Dns]::GetHostByName($ENV:computerName).Hostname
-                if ($MatchAlternate) {
-                    $Thumbprint = (Get-ChildItem -Path Cert:\localmachine\my | Where-Object { 
-                            ($_.Extensions.EnhancedKeyUsages.FriendlyName -contains 'Server Authentication') -and
-                            ($_.Issuer -eq $Issuer) -and
-                            ($HostName -in $_.DNSNameList.Unicode) -and
-                            ($_.Subject -eq "CN=$HostName") } | Select-Object -First 1
-                        ).Thumbprint
-                } else {
-                    $Thumbprint = (Get-ChildItem -Path Cert:\localmachine\my | Where-Object { 
-                            ($_.Extensions.EnhancedKeyUsages.FriendlyName -contains 'Server Authentication') -and
-                            ($_.Issuer -eq $Issuer) -and
-                            ($_.Subject -eq "CN=$HostName") } | Select-Object -First 1
-                        ).Thumbprint    
-                } # if
-            }
-            if (($SubjectFormat -in 'Both','NameOnly') -and -not $Thumbprint) {
-                # If could not find an FQDN cert, try for one issued to the computer name
-                [String] $HostName = $ENV:ComputerName
-                if ($MatchAlternate) {
-                    $Thumbprint = (Get-ChildItem -Path Cert:\localmachine\my | Where-Object { 
-                            ($_.Extensions.EnhancedKeyUsages.FriendlyName -contains 'Server Authentication') -and
-                            ($_.Issuer -eq $Issuer) -and
-                            ($HostName -in $_.DNSNameList.Unicode) -and
-                            ($_.Subject -eq "CN=$HostName") } | Select-Object -First 1
-                        ).Thumbprint
-                } else {
-                    $Thumbprint = (Get-ChildItem -Path Cert:\localmachine\my | Where-Object { 
-                            ($_.Extensions.EnhancedKeyUsages.FriendlyName -contains 'Server Authentication') -and
-                            ($_.Issuer -eq $Issuer) -and
-                            ($_.Subject -eq "CN=$HostName") } | Select-Object -First 1
-                        ).Thumbprint    
-                } # if
-            } # if
-            if ($Thumbprint) {
-                # A certificate was found, so use it to enable the HTTPS WinRM listener
-                Write-Verbose -Message ( @(
-                    "$($MyInvocation.MyCommand): "
-                    $($LocalizedData.CreatingListenerMessage) -f $Transport,$Port
-                    ) -join '' )
-                New-WSManInstance `
-                    -ResourceURI winrm/config/Listener `
-                    -SelectorSet @{Address=$Address;Transport=$Transport} `
-                    -ValueSet @{Hostname=$HostName;CertificateThumbprint=$Thumbprint;Port=$Port} `
-                    -ErrorAction Stop
-            } else {
-                Write-Verbose -Message ( @(
-                    "$($MyInvocation.MyCommand): "
-                    $($LocalizedData.ListenerCreateFailNoCertError) -f $Transport,$Port
-                    ) -join '' )
-            } # if
-        } else {
+        
+        # Check the FileNameToExclude
+        if (($FileNameToExclude -ne $null) `
+            -and ((Compare-Object `
+                -ReferenceObject  $RepGroupFolder.FileNameToExclude `
+                -DifferenceObject $FileNameToExclude) -ne 0)) {
+            $Splat += @{ FileNameToExclude = $FileNameToExclude }
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
-                $($LocalizedData.CreatingListenerMessage) -f $Transport,$Port
+                $($LocalizedData.RepGroupFolderFileNameToExcludeUpdateMessage) -f $GroupName,$FolderName,$DomainName
                 ) -join '' )
-            New-WSManInstance `
-                -ResourceURI winrm/config/Listener `
-                -SelectorSet @{Address=$Address;Transport=$Transport} `
-                -ValueSet @{Port=$Port} `
-                -ErrorAction Stop
         }
+
+        # Check the DirectoryNameToExclude
+        if (($DirectoryNameToExclude -ne $null) `
+            -and ((Compare-Object `
+                -ReferenceObject  $RepGroupFolder.DirectoryNameToExclude `
+                -DifferenceObject $DirectoryNameToExclude) -ne 0)) {
+            $Splat += @{ DirectoryNameToExclude = $DirectoryNameToExclude }
+            Write-Verbose -Message ( @(
+                "$($MyInvocation.MyCommand): "
+                $($LocalizedData.RepGroupFolderDirectoryNameToExcludeUpdateMessage) -f $GroupName,$FolderName,$DomainName
+                ) -join '' )
+        }
+
+        # Now apply the changes that have been loaded into the splat
+        Set-DfsReplicatedFolder @Splat -ErrorAction Stop
+
+        Write-Verbose -Message ( @(
+            "$($MyInvocation.MyCommand): "
+            $($LocalizedData.RepGroupFolderUpdatedMessage) -f $GroupName,$FolderName,$DomainName
+            ) -join '' )
+
     } else {
-        # The listener should not exist
-        Write-Verbose -Message ( @(
-            "$($MyInvocation.MyCommand): "
-            $($LocalizedData.EnsureListenerDoesNotExistMessage) -f $Transport,$Port
-            ) -join '' )
-        if ($Listeners) {
-            Write-Verbose -Message ( @(
-                "$($MyInvocation.MyCommand): "
-                $($LocalizedData.ListenerExistsRemoveMessage) -f $Transport,$Port
-                ) -join '' )
-            Remove-WSManInstance `
-                -ResourceURI winrm/config/Listener `
-                -SelectorSet @{ Transport=$Listeners.Transport;Address=$Listeners.Address }
-        }
+        # The Rep Group folder doesn't exist
+        $errorId = 'RegGroupFolderMissingError'
+        $errorCategory = [System.Management.Automation.ErrorCategory]::InvalidOperation
+        $errorMessage = $($LocalizedData.RepGroupFolderMissingError) -f $GroupName,$FolderName,$DomainName
+        $exception = New-Object -TypeName System.InvalidOperationException `
+            -ArgumentList $errorMessage
+        $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord `
+            -ArgumentList $exception, $errorId, $errorCategory, $null
+
+        $PSCmdlet.ThrowTerminatingError($errorRecord)
     } # if
 } # Set-TargetResource
 
 ######################################################################################
 # The Test-TargetResource cmdlet.
-# This function will detect if any changes need to be made on the listener on the
-# specified port.
 ######################################################################################
 function Test-TargetResource
 {
@@ -247,30 +201,24 @@ function Test-TargetResource
     param
     (
         [parameter(Mandatory = $true)]
-        [ValidateSet('HTTP','HTTPS')]
         [String]
-        $Transport,
+        $GroupName,
 
         [parameter(Mandatory = $true)]
-        [ValidateSet('Present','Absent')]
         [String]
-        $Ensure,
-
-        [UInt16]
-        $Port,
+        $FolderName,
 
         [String]
-        $Address = '*',
+        $Description,
+
+        [String[]]
+        $FileNameToExclude,
+
+        [String[]]
+        $DirectoryNameToExclude,
 
         [String]
-        $Issuer,
-
-        [ValidateSet('Both','FQDNOnly','NameOnly')]
-        [String]
-        $SubjectFormat = 'Both',
-
-        [Boolean]
-        $MatchAlternate
+        $DomainName
     )
 
     # Flag to signal whether settings are correct
@@ -278,115 +226,70 @@ function Test-TargetResource
 
     Write-Verbose -Message ( @(
         "$($MyInvocation.MyCommand): "
-        $($LocalizedData.TestingListenerMessage)
+        $($LocalizedData.TestingRegGroupFolderMessage) -f $GroupName,$FolderName,$DomainName
         ) -join '' )
 
-    # Lookup the existing Listener
-    $Listeners = Get-Listener -Transport $Transport
-    
-    # Get the default port for the transport if none was provided
-    $Port = Get-DefaultPort -Transport $Transport -Port $Port
+    # Lookup the existing Replication Group Folder
+    $Splat = @{ GroupName = $GroupName; FolderName = $FolderName }
+    if ($DomainName) {
+        $Splat += @{ DomainName = $DomainName }
+    }
+    $RepGroupFolder = Get-DfsReplicatedFolder @Splat -ErrorAction Stop
 
-    if ($Ensure -eq 'Present') {
-        # The listener should exist
-        if ($Listeners) {
-            # The Listener exists already
+    if ($RepGroupFolder) {
+        # The rep group folder is found
+        Write-Verbose -Message ( @(
+            "$($MyInvocation.MyCommand): "
+            $($LocalizedData.RepGroupExistsMessage) -f $GroupName,$DomainName
+            ) -join '' )
+
+        # Check the description
+        if (($Description -ne $null) -and ($RepGroupFolder.Description -ne $Description)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
-                $($LocalizedData.ListenerExistsMessage)
+                $($LocalizedData.RepGroupFolderDescriptionMismatchMessage) -f $GroupName,$FolderName,$DomainName
                 ) -join '' )
-            # Check it is setup as per parameters
-            if ($Listeners.Port -ne $Port) {
-                Write-Verbose -Message ( @(
-                    "$($MyInvocation.MyCommand): "
-                    $($LocalizedData.ListenerOnWrongPortMessage) -f $Transport,$Listeners.Port,$Port
-                    ) -join '' )
-                $desiredConfigurationMatch = $false                
-            }
-            if ($Listeners.Address -ne $Address) {
-                Write-Verbose -Message ( @(
-                    "$($MyInvocation.MyCommand): "
-                    $($LocalizedData.ListenerOnWrongAddressMessage) -f $Transport,$Listeners.Address,$Address
-                    ) -join '' )
-                $desiredConfigurationMatch = $false                
-            }
-        } else {
-            # Ths listener doesn't exist but should
+            $desiredConfigurationMatch = $false
+        }
+        
+        # Check the FileNameToExclude
+        if (($FileNameToExclude -ne $null) `
+            -and ((Compare-Object `
+                -ReferenceObject  $RepGroupFolder.FileNameToExclude `
+                -DifferenceObject $FileNameToExclude).Count -ne 0)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
-                 $($LocalizedData.ListenerDoesNotExistButShouldMessage) -f $Transport
+                $($LocalizedData.RepGroupFolderFileNameToExcludeMismatchMessage) -f $GroupName,$FolderName,$DomainName
+                ) -join '' )
+            $desiredConfigurationMatch = $false
+        }
+
+        # Check the DirectoryNameToExclude
+        if (($DirectoryNameToExclude -ne $null) `
+            -and ((Compare-Object `
+                -ReferenceObject  $RepGroupFolder.DirectoryNameToExclude `
+                -DifferenceObject $DirectoryNameToExclude).Count -ne 0)) {
+            Write-Verbose -Message ( @(
+                "$($MyInvocation.MyCommand): "
+                $($LocalizedData.RepGroupFolderDirectoryNameToExcludeMismatchMessage) -f $GroupName,$FolderName,$DomainName
                 ) -join '' )
             $desiredConfigurationMatch = $false
         }
     } else {
-        # The listener should not exist
-        if ($Listeners) {
-            # The listener exists but should not
-            Write-Verbose -Message ( @(
-                "$($MyInvocation.MyCommand): "
-                 $($LocalizedData.ListenerExistsButShouldNotMessage) -f $Transport
-                ) -join '' )
-            $desiredConfigurationMatch = $false
-        } else {
-            # The listener does not exist and should not
-            Write-Verbose -Message ( @(
-                "$($MyInvocation.MyCommand): "
-                $($LocalizedData.ListenerDoesNotExistAndShouldNotMessage) -f $Transport
-                ) -join '' )
-        }
-    } # if
+        # The Rep Group folder doesn't exist
+        $errorId = 'RegGroupFolderMissingError'
+        $errorCategory = [System.Management.Automation.ErrorCategory]::InvalidOperation
+        $errorMessage = $($LocalizedData.RepGroupFolderMissingError) -f $GroupName,$FolderName,$DomainName
+        $exception = New-Object -TypeName System.InvalidOperationException `
+            -ArgumentList $errorMessage
+        $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord `
+            -ArgumentList $exception, $errorId, $errorCategory, $null
+
+        $PSCmdlet.ThrowTerminatingError($errorRecord)
+    }
+
     return $desiredConfigurationMatch
 } # Test-TargetResource
-
 ######################################################################################
-# Helpers
-######################################################################################
-function Get-Listener
-{
-    [OutputType([Hashtable])]
-    param
-    (
-        [parameter(Mandatory = $true)]
-        [ValidateSet('HTTP','HTTPS')]
-        [String]
-        $Transport
-    )
-    
-    $Listeners = @(Get-WSManInstance `
-        -ResourceURI winrm/config/Listener `
-        -Enumerate)
-    if ($Listeners) {
-        
-        return $Listeners.Where( {$_.Transport -eq $Transport } )
-    }
 
-} # Get-Listener
-
-######################################################################################
-function Get-DefaultPort
-{
-    [OutputType([UInt16])]
-    param
-    (
-        [parameter(Mandatory = $true)]
-        [ValidateSet('HTTP','HTTPS')]
-        [String]
-        $Transport,
-
-        [UInt16]
-        $Port
-    )
-
-    if (-not $Port) {
-        # Set the default port because none was provided
-        if ($Transport -eq 'HTTP') {
-            $Port = 5985
-        } else {
-            $Port = 5986
-        }
-    }
-    return $Port
-}
-
-######################################################################################
 Export-ModuleMember -Function *-TargetResource
