@@ -18,7 +18,7 @@ configuration Sample_cDFSRepGroup
             GroupName = 'Public'
             FolderName = 'Software'
             Description = 'DFS Share for storing software installers'
-			DirectoryNameToExclude = 'Temp'
+            DirectoryNameToExclude = 'Temp'
         } # End of RGPublic Resource
 
         cDFSRepGroupMembership RGPublicSoftwareFS1
