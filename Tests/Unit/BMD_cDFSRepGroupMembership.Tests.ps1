@@ -138,6 +138,10 @@ InModuleScope $DSCResourceName {
                 $Result.GroupName | Should Be $Global:MockRepGroupMembership.GroupName
                 $Result.FolderName | Should Be $Global:MockRepGroupMembership.FolderName               
                 $Result.ComputerName | Should Be $Global:MockRepGroupMembership.ComputerName               
+                $Result.ContentPath | Should Be $Global:MockRepGroupMembership.ContentPath               
+                $Result.StagingPath | Should Be $Global:MockRepGroupMembership.StagingPath               
+                $Result.ConflictAndDeletedPath | Should Be $Global:MockRepGroupMembership.ConflictAndDeletedPath               
+                $Result.ReadOnly | Should Be $Global:MockRepGroupMembership.ReadOnly               
                 $Result.DomainName | Should Be $Global:MockRepGroupMembership.DomainName
             }
             It 'should call the expected mocks' {
@@ -150,6 +154,50 @@ InModuleScope $DSCResourceName {
 
     Describe 'Set-TargetResource' {
 
+        Context 'Replication group folder exists but has different ContentPath' {
+            
+            Mock Set-DfsrMembership
+
+            It 'should not throw error' {
+                $Splat = $Global:MockRepGroupMembership.Clone()
+                $Splat.Remove('ConflictAndDeletedPath')
+                $Splat.ContentPath = 'Different'
+                { Set-TargetResource @Splat } | Should Not Throw
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Set-DfsrMembership -Exactly 1
+            }
+        }
+
+        Context 'Replication group folder exists but has different StagingPath' {
+            
+            Mock Set-DfsrMembership
+
+            It 'should not throw error' {
+                $Splat = $Global:MockRepGroupMembership.Clone()
+                $Splat.Remove('ConflictAndDeletedPath')
+                $Splat.StagingPath = 'Different'
+                { Set-TargetResource @Splat } | Should Not Throw
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Set-DfsrMembership -Exactly 1
+            }
+        }
+
+        Context 'Replication group folder exists but has different ReadOnly' {
+            
+            Mock Set-DfsrMembership
+
+            It 'should not throw error' {
+                $Splat = $Global:MockRepGroupMembership.Clone()
+                $Splat.Remove('ConflictAndDeletedPath')
+                $Splat.ReadOnly = (-not $Splat.ReadOnly)
+                { Set-TargetResource @Splat } | Should Not Throw
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Set-DfsrMembership -Exactly 1
+            }
+        }
     }
 
 ######################################################################################

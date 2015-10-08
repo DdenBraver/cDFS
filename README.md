@@ -19,20 +19,22 @@ To confirm installation:
     Run Get-DSCResource to see that cDFS is among the DSC Resources listed 
 
 
-## Important Information
+## Very Important Information
 ### DFSR Module
 This DSC Resource requires that the DFSR PowerShell module is installed onto any computer this resource will be used on. This module is installed as part of RSAT tools or RSAT-DFS-Mgmt-Con Windows Feature in Windows Server 2012 R2.
-However, this will automatically convert a Server Core installation into one containing the managment tools, which may not be ideal. There may work arounds for this, such as manually installing this module onto the Server Core.
+However, this will automatically convert a Server Core installation into one containing the managment tools, which may not be ideal because it is no longer strictly a Server Core installation.
 Because this DSC Resource actually only configures information within the AD, it is only required that this resource is run on a computer that is registered in AD. It doesn't need to be run on one of the File Servers participating
 in the Distributed File System or Namespace.
 
-### Run As
-Because this resource is configuring information within Active Directory, the **PSDSCRunAsCredential** must be used with a credential of a domain user that can work with DFS information.
+### Domain Credentials
+Because this resource is configuring information within Active Directory, the **PSDSCRunAsCredential** must be used with a credential of a domain user that can work with DFS information. This means that this resource can only work on computers with Windows Management Framework 5.0 or above.
+
 
 ## Contributing
 Please check out common DSC Resources [contributing guidelines](https://github.com/PowerShell/DscResource.Kit/blob/master/CONTRIBUTING.md).
 
 
+## Resources
 ### cDFSRepGroup
 This resource is used to create, edit or remove DFS Replication Groups. If used to create a Replcation Group it should be combined with the cDFSRepGroupMembership resources.
 
@@ -64,7 +66,6 @@ This resource is used to configure Replication Group Folder Membership. It is us
 * **ComputerName**: The computer name of the Replication Group member. Required.
 * **ContentPath**: The local content path for this folder member. Required.
 * **StagingPath**: Ths staging path for this folder member. Optional.
-* **ConflictAndDeletedPath**: Ths conflict and deleted file path for this folder member. Optional.
 * **ReadOnly**: Used to set this folder member to read only. Optional.
 * **DomainName**: The AD domain the Replication Group should created in. Optional.
 

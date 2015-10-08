@@ -12,10 +12,6 @@ GettingRepGroupFolderMessage=Getting DFS Replication Group "{0}" folder "{1}".
 RepGroupFolderExistsMessage=DFS Replication Group "{0}" folder "{1}" exists.
 RepGroupFolderMissingError=DFS Replication Group "{0}" folder "{1}" is missing.
 SettingRegGroupFolderMessage=Setting DFS Replication Group "{0}" folder "{1}".
-RepGroupExistsMessage=DFS Replication Group "{0}" folder "{1}" exists.
-RepGroupFolderDescriptionUpdateMessage=DFS Replication Group "{0}" folder "{1}" has incorrect Description. Updating.
-RepGroupFolderFileNameToExcludeUpdateMessage=DFS Replication Group "{0}" folder "{1}" has incorrect FileNameToExclude. Updating.
-RepGroupFolderDirectoryNameToExcludeUpdateMessage=DFS Replication Group "{0}" folder "{1}" has incorrect DirectoryNameToExclude. Updating.
 RepGroupFolderUpdatedMessage=DFS Replication Group "{0}" folder "{1}" has has been updated.
 TestingRegGroupFolderMessage=Testing DFS Replication Group "{0}" folder "{1}".
 RepGroupFolderDescriptionMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect Description. Change required.
@@ -122,68 +118,24 @@ function Set-TargetResource
     if ($DomainName) {
         $Splat += @{ DomainName = $DomainName }
     }
-    $RepGroupFolder = Get-DfsReplicatedFolder @Splat -ErrorAction Stop
+    if ($Description -ne $null) {
+        $Splat += @{ Description = $Description }
+    }
+    if ($FileNameToExclude -ne $null) {
+        $Splat += @{ FileNameToExclude = $FileNameToExclude }
+    }
+    if ($DirectoryNameToExclude -ne $null) {
+        $Splat += @{ DirectoryNameToExclude = $DirectoryNameToExclude }
+    }
 
-    if ($RepGroupFolder) {
-        # The rep group folder is found
-        Write-Verbose -Message ( @(
-            "$($MyInvocation.MyCommand): "
-            $($LocalizedData.RepGroupExistsMessage) -f $GroupName,$FolderName,$DomainName
-            ) -join '' )
+    # Now apply the changes that have been loaded into the splat
+    Set-DfsReplicatedFolder @Splat -ErrorAction Stop
 
-        # Check the description
-        if (($Description -ne $null) -and ($RepGroupFolder.Description -ne $Description)) {
-            $Splat += @{ Description = $Description }
-            Write-Verbose -Message ( @(
-                "$($MyInvocation.MyCommand): "
-                $($LocalizedData.RepGroupFolderDescriptionUpdateMessage) -f $GroupName,$FolderName,$DomainName
-                ) -join '' )
-        }
-        
-        # Check the FileNameToExclude
-        if (($FileNameToExclude -ne $null) `
-            -and ((Compare-Object `
-                -ReferenceObject  $RepGroupFolder.FileNameToExclude `
-                -DifferenceObject $FileNameToExclude) -ne 0)) {
-            $Splat += @{ FileNameToExclude = $FileNameToExclude }
-            Write-Verbose -Message ( @(
-                "$($MyInvocation.MyCommand): "
-                $($LocalizedData.RepGroupFolderFileNameToExcludeUpdateMessage) -f $GroupName,$FolderName,$DomainName
-                ) -join '' )
-        }
+    Write-Verbose -Message ( @(
+        "$($MyInvocation.MyCommand): "
+        $($LocalizedData.RepGroupFolderUpdatedMessage) -f $GroupName,$FolderName,$DomainName
+        ) -join '' )
 
-        # Check the DirectoryNameToExclude
-        if (($DirectoryNameToExclude -ne $null) `
-            -and ((Compare-Object `
-                -ReferenceObject  $RepGroupFolder.DirectoryNameToExclude `
-                -DifferenceObject $DirectoryNameToExclude) -ne 0)) {
-            $Splat += @{ DirectoryNameToExclude = $DirectoryNameToExclude }
-            Write-Verbose -Message ( @(
-                "$($MyInvocation.MyCommand): "
-                $($LocalizedData.RepGroupFolderDirectoryNameToExcludeUpdateMessage) -f $GroupName,$FolderName,$DomainName
-                ) -join '' )
-        }
-
-        # Now apply the changes that have been loaded into the splat
-        Set-DfsReplicatedFolder @Splat -ErrorAction Stop
-
-        Write-Verbose -Message ( @(
-            "$($MyInvocation.MyCommand): "
-            $($LocalizedData.RepGroupFolderUpdatedMessage) -f $GroupName,$FolderName,$DomainName
-            ) -join '' )
-
-    } else {
-        # The Rep Group folder doesn't exist
-        $errorId = 'RegGroupFolderMissingError'
-        $errorCategory = [System.Management.Automation.ErrorCategory]::InvalidOperation
-        $errorMessage = $($LocalizedData.RepGroupFolderMissingError) -f $GroupName,$FolderName,$DomainName
-        $exception = New-Object -TypeName System.InvalidOperationException `
-            -ArgumentList $errorMessage
-        $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord `
-            -ArgumentList $exception, $errorId, $errorCategory, $null
-
-        $PSCmdlet.ThrowTerminatingError($errorRecord)
-    } # if
 } # Set-TargetResource
 
 ######################################################################################
@@ -234,7 +186,7 @@ function Test-TargetResource
         # The rep group folder is found
         Write-Verbose -Message ( @(
             "$($MyInvocation.MyCommand): "
-            $($LocalizedData.RepGroupExistsMessage) -f $GroupName,$DomainName
+            $($LocalizedData.RepGroupFolderExistsMessage) -f $GroupName,$DomainName
             ) -join '' )
 
         # Check the description

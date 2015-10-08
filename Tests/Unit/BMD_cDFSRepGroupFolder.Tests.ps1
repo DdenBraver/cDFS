@@ -147,31 +147,8 @@ InModuleScope $DSCResourceName {
 
     Describe 'Set-TargetResource' {
 
-        Context 'Replication group folder does not exist' {
-            
-            Mock Get-DfsReplicatedFolder
-            Mock Set-DfsReplicatedFolder
-
-            It 'should throw RegGroupFolderMissingError error' {
-                $errorId = 'RegGroupFolderMissingError'
-                $errorCategory = [System.Management.Automation.ErrorCategory]::InvalidOperation
-                $errorMessage = $($LocalizedData.RepGroupFolderMissingError) -f $Global:MockRepGroupFolder[0].GroupName,$Global:MockRepGroupFolder[0].FolderName
-                $exception = New-Object -TypeName System.InvalidOperationException `
-                    -ArgumentList $errorMessage
-                $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord `
-                    -ArgumentList $exception, $errorId, $errorCategory, $null
-                $Splat = $Global:MockRepGroupFolder[0].Clone()
-                { Set-TargetResource @Splat } | Should Throw $errorRecord
-            }
-            It 'should call expected Mocks' {
-                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
-                Assert-MockCalled -commandName Set-DfsReplicatedFolder -Exactly 0
-            }
-        }
-
         Context 'Replication group folder exists but has different Description' {
             
-            Mock Get-DfsReplicatedFolder -MockWith { return @($Global:MockRepGroupFolder[0]) }
             Mock Set-DfsReplicatedFolder
 
             It 'should not throw error' {
@@ -180,14 +157,12 @@ InModuleScope $DSCResourceName {
                 { Set-TargetResource @Splat } | Should Not Throw
             }
             It 'should call expected Mocks' {
-                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
                 Assert-MockCalled -commandName Set-DfsReplicatedFolder -Exactly 1
             }
         }
 
         Context 'Replication group folder exists but has different FileNameToExclude' {
             
-            Mock Get-DfsReplicatedFolder -MockWith { return @($Global:MockRepGroupFolder[0]) }
             Mock Set-DfsReplicatedFolder
 
             It 'should not throw error' {
@@ -196,14 +171,12 @@ InModuleScope $DSCResourceName {
                 { Set-TargetResource @Splat } | Should Not Throw
             }
             It 'should call expected Mocks' {
-                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
                 Assert-MockCalled -commandName Set-DfsReplicatedFolder -Exactly 1
             }
         }
 
         Context 'Replication group folder exists but has different DirectoryNameToExclude' {
             
-            Mock Get-DfsReplicatedFolder -MockWith { return @($Global:MockRepGroupFolder[0]) }
             Mock Set-DfsReplicatedFolder
 
             It 'should not throw error' {
@@ -212,7 +185,6 @@ InModuleScope $DSCResourceName {
                 { Set-TargetResource @Splat } | Should Not Throw
             }
             It 'should call expected Mocks' {
-                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
                 Assert-MockCalled -commandName Set-DfsReplicatedFolder -Exactly 1
             }
         }
