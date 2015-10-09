@@ -145,5 +145,5 @@ configuration Sample_cDFSRepGroup
 * Initial release.
 
 ## Links
-* **[![GitHub Repo](https://github.com/PlagueHO/cDFS)]**: Raise any issues, requests or PRs here.
-* **[![Blog](https://dscottraynsford.wordpress.com)]
+* **[GitHub Repo](https://github.com/PlagueHO/cDFS)**: Raise any issues, requests or PRs here.
+* **[My Blog](https://dscottraynsford.wordpress.com)**: See my PowerShell and Programming Blog.
