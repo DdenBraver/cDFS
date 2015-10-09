@@ -4,20 +4,13 @@
 
 The **cDFS** module contains DSC resources for configuring Distributed File System Replication and Namespaces. Currently in this version only Replication folders are supported. Namespaces will be supported in a future release.
 
+## Requirements
+Windows Management Framework 5.0 - Required because the PSDSCRunAsCredential DSC Resource parameter is needed.
+
 ## Installation
-### Installation if WMF5.0 is Installed
 ```powershell
 Install-Module -Name cDFS -MinimumVersion 1.0.0.0
 ```
-
-### Installation if WMF5.0 is Not Installed
-
-    Unzip the content under $env:ProgramFiles\WindowsPowerShell\Modules folder 
-
-To confirm installation:
-
-    Run Get-DSCResource to see that cDFS is among the DSC Resources listed 
-
 
 ## Very Important Information
 ### DFSR Module
@@ -27,7 +20,7 @@ Because this DSC Resource actually only configures information within the AD, it
 in the Distributed File System or Namespace.
 
 ### Domain Credentials
-Because this resource is configuring information within Active Directory, the **PSDSCRunAsCredential** must be used with a credential of a domain user that can work with DFS information. This means that this resource can only work on computers with Windows Management Framework 5.0 or above.
+Because this resource is configuring information within Active Directory, the **PSDSCRunAsCredential** property must be used with a credential of a domain user that can work with DFS information. This means that this resource can only work on computers with Windows Management Framework 5.0 or above.
 
 
 ## Contributing
@@ -78,6 +71,8 @@ configuration Sample_cDFSRepGroup
 
     Node $NodeName
     {
+        [PSCredential]$Credential = New-Object System.Management.Automation.PSCredential ("CONTOSO.COM\Administrator", (ConvertTo-SecureString $"MyP@ssw0rd!1" -AsPlainText -Force))
+
         cDFSRepGroup RGPublic
         {
             GroupName = 'Public'
@@ -85,6 +80,7 @@ configuration Sample_cDFSRepGroup
             Ensure = 'Present'
             Members = 'FileServer1','FileServer2'
             Folders = 'Software'
+            PSDSCRunAsCredential = $Credential
         } # End of RGPublic Resource
 
         cDFSRepGroupFolder RGSoftwareFolder
@@ -93,6 +89,8 @@ configuration Sample_cDFSRepGroup
             FolderName = 'Software'
             Description = 'DFS Share for storing software installers'
             DirectoryNameToExclude = 'Temp'
+            PSDSCRunAsCredential = $Credential
+            DependsOn = '[cDFSRepGroup]RGPublic'
         } # End of RGPublic Resource
 
         cDFSRepGroupMembership RGPublicSoftwareFS1
@@ -101,6 +99,8 @@ configuration Sample_cDFSRepGroup
             FolderName = 'Software'
             ComputerName = 'FileServer1'
             ContentPath = 'd:\Public\Software'
+            PSDSCRunAsCredential = $Credential
+            DependsOn = '[cDFSRepGroupFolder]RGSoftwareFolder'
         } # End of RGPublicSoftwareFS1 Resource
 
         cDFSRepGroupMembership RGPublicSoftwareFS2
@@ -109,6 +109,8 @@ configuration Sample_cDFSRepGroup
             FolderName = 'Software'
             ComputerName = 'FileServer2'
             ContentPath = 'e:\Data\Public\Software'
+            PSDSCRunAsCredential = $Credential
+            DependsOn = '[cDFSRepGroupFolder]RGPublicSoftwareFS1'
         } # End of RGPublicSoftwareFS2 Resource
 
     } # End of Node

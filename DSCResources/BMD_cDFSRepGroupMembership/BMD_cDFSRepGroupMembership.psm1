@@ -137,7 +137,7 @@ function Set-TargetResource
     if ($ContentPath -ne $null) {
         $Splat += @{ ContentPath = $ContentPath }
     }
-    if ($StagingPath -ne $null) {
+    if ($StagingPath) {
         $Splat += @{ StagingPath = $StagingPath }
     }
     if ($ReadOnly -ne $null) {
