@@ -8,23 +8,10 @@ configuration Sample_cDFSRepGroup
 
         # Install the Prerequisite features first
         # Requires Windows Server 2012 R2 Full install
-        WindowsFeature DFSNameSpaceInstall 
-        { 
-            Ensure = "Present" 
-            Name = "FS-DFS-Namespace" 
-        }
-
-        WindowsFeature DFSReplicationInstall 
-        { 
-            Ensure = "Present" 
-            Name = "FS-DFS-Replication" 
-        }
-
         WindowsFeature RSATDFSMgmtConInstall 
         { 
             Ensure = "Present" 
             Name = "RSAT-DFS-Mgmt-Con" 
-            DependsOn = "[WindowsFeature]DFSReplicationInstall","[WindowsFeature]DFSNameSpaceInstall" 
         }
 
         # Configure the Replication Group
