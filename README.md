@@ -73,6 +73,26 @@ configuration Sample_cDFSRepGroup
     {
         [PSCredential]$Credential = New-Object System.Management.Automation.PSCredential ("CONTOSO.COM\Administrator", (ConvertTo-SecureString $"MyP@ssw0rd!1" -AsPlainText -Force))
 
+        WindowsFeature DFSNameSpaceInstall 
+        { 
+            Ensure = "Present" 
+            Name = "FS-DFS-Namespace" 
+        }
+
+        WindowsFeature DFSReplicationInstall 
+        { 
+            Ensure = "Present" 
+            Name = "FS-DFS-Replication" 
+        }
+
+        WindowsFeature RSATDFSMgmtConInstall 
+        { 
+            Ensure = "Present" 
+            Name = "RSAT-DFS-Mgmt-Con" 
+            DependsOn = "[WindowsFeature]DFSReplicationInstall","[WindowsFeature]DFSNameSpaceInstall" 
+        }
+
+        # Configure the Replication Group
         cDFSRepGroup RGPublic
         {
             GroupName = 'Public'
@@ -81,6 +101,7 @@ configuration Sample_cDFSRepGroup
             Members = 'FileServer1','FileServer2'
             Folders = 'Software'
             PSDSCRunAsCredential = $Credential
+            DependsOn = "[WindowsFeature]RSATDFSMgmtConInstall"
         } # End of RGPublic Resource
 
         cDFSRepGroupFolder RGSoftwareFolder
@@ -122,3 +143,7 @@ configuration Sample_cDFSRepGroup
 ### 1.0.0.0
 
 * Initial release.
+
+## Links
+* **[![GitHub Repo](https://github.com/PlagueHO/cDFS)]**: Raise any issues, requests or PRs here.
+* **[![Blog](https://dscottraynsford.wordpress.com)]
