@@ -5,14 +5,14 @@
 The **cDFS** module contains DSC resources for configuring Distributed File System Replication and Namespaces. Currently in this version only Replication folders are supported. Namespaces will be supported in a future release.
 
 ## Requirements
-Windows Management Framework 5.0 - Required because the PSDSCRunAsCredential DSC Resource parameter is needed.
+* **Windows Management Framework 5.0**: Required because the PSDSCRunAsCredential DSC Resource parameter is needed.
 
 ## Installation
 ```powershell
 Install-Module -Name cDFS -MinimumVersion 1.0.0.0
 ```
 
-## Very Important Information
+## Important Information
 ### DFSR Module
 This DSC Resource requires that the DFSR PowerShell module is installed onto any computer this resource will be used on. This module is installed as part of RSAT tools or RSAT-DFS-Mgmt-Con Windows Feature in Windows Server 2012 R2.
 However, this will automatically convert a Server Core installation into one containing the managment tools, which may not be ideal because it is no longer strictly a Server Core installation.
