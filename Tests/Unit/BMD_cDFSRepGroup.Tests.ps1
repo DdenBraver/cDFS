@@ -121,13 +121,13 @@ InModuleScope $DSCResourceName {
         ReadOnly = $False
     }
     $Global:MockRepGroupConnection = [PSObject]@{
-        GroupName = $Global:RepGroupConnection.GroupName
-        SourceComputerName = $Global:RepGroupConnection.SourceComputerName
-        DestinationComputerName = $Global:RepGroupConnection.DestinationComputerName
-        Description = $Global:RepGroupConnection.Description
-        Enabled = (-not $Global:RepGroupConnection.DisableConnection)
-        RDCEnabled = (-not $Global:RepGroupConnection.DisableRDC)
-        DomainName = $Global:RepGroupConnection.DomainName
+        GroupName = $Global:RepGroupConnections[0].GroupName
+        SourceComputerName = $Global:RepGroupConnections[0].SourceComputerName
+        DestinationComputerName = $Global:RepGroupConnections[0].DestinationComputerName
+        Description = $Global:RepGroupConnections[0].Description
+        Enabled = (-not $Global:RepGroupConnections[0].DisableConnection)
+        RDCEnabled = (-not $Global:RepGroupConnections[0].DisableRDC)
+        DomainName = $Global:RepGroupConnections[0].DomainName
     }
 
 ######################################################################################
