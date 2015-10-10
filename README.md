@@ -37,7 +37,7 @@ This resource is used to create, edit or remove DFS Replication Groups. If used 
 * **Description**: A description for the Replication Group. Optional.
 * **Members**: A list of computers that are members of this Replication Group. Optional.
 * **Folders**: A list of folders that are replicated in this Replication Group. Optional.
-* **Topology**: This allows a replication topology to assign to the Replication Group. It defaults to Manual, which will not automatically create a topology. If set to Fullmesh, a full mesh topology will be assigned. Optional.
+* **Topology**: This allows a replication topology to assign to the Replication Group. It defaults to Manual, which will not automatically create a topology. If set to Fullmesh, a full mesh topology between all members will be created. Optional.
 * **DomainName**: The AD domain the Replication Group should created in. Optional.
 
 ### cDFSRepGroupConnection

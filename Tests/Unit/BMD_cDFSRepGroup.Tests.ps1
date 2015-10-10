@@ -45,11 +45,36 @@ InModuleScope $DSCResourceName {
     $Global:RepGroup = [PSObject]@{
         GroupName = 'Test Group'
         Ensure = 'Present'
-        DomainName = 'CONTOSO.COM'
         Description = 'Test Description'
         Members = @('FileServer1','FileServer2')
         Folders = @('Folder1','Folder2')
+        Topology = 'Manual'
+        DomainName = 'CONTOSO.COM'
     }
+    $Global:RepGroupConnections = @(
+        [PSObject]@{
+            GroupName = 'Test Group'
+            SourceComputerName = $Global:RepGroup.Members[0]
+            DestinationComputerName = $Global:RepGroup.Members[1]
+            Ensure = 'Present'
+            Description = 'Connection Description'
+            DisableConnection = $false
+            DisableRDC = $false
+            DomainName = 'CONTOSO.COM'
+        },
+        [PSObject]@{
+            GroupName = 'Test Group'
+            SourceComputerName = $Global:RepGroup.Members[1]
+            DestinationComputerName = $Global:RepGroup.Members[0]
+            Ensure = 'Present'
+            Description = 'Connection Description'
+            DisableConnection = $false
+            DisableRDC = $false
+            DomainName = 'CONTOSO.COM'
+        }
+    )
+    $Global:RepGroupConnectionDisabled = $Global:RepGroupConnections[0].Clone()
+    $Global:RepGroupConnectionDisabled.DisableConnection = $True
     $Global:MockRepGroup = [PSObject]@{
         GroupName = $Global:RepGroup.GroupName
         DomainName = $Global:RepGroup.DomainName
@@ -94,6 +119,15 @@ InModuleScope $DSCResourceName {
         StagingPath = 'd:\public\software\DfsrPrivate\Staging\'
         ConflictAndDeletedPath = 'd:\public\software\DfsrPrivate\ConflictAndDeleted\'
         ReadOnly = $False
+    }
+    $Global:MockRepGroupConnection = [PSObject]@{
+        GroupName = $Global:RepGroupConnection.GroupName
+        SourceComputerName = $Global:RepGroupConnection.SourceComputerName
+        DestinationComputerName = $Global:RepGroupConnection.DestinationComputerName
+        Description = $Global:RepGroupConnection.Description
+        Enabled = (-not $Global:RepGroupConnection.DisableConnection)
+        RDCEnabled = (-not $Global:RepGroupConnection.DisableRDC)
+        DomainName = $Global:RepGroupConnection.DomainName
     }
 
 ######################################################################################
@@ -397,7 +431,7 @@ InModuleScope $DSCResourceName {
             It 'should not throw error' {
                 { 
                     $Splat = $Global:RepGroup.Clone()
-                   Set-TargetResource @Splat
+                    Set-TargetResource @Splat
                 } | Should Not Throw
             }
             It 'should call expected Mocks' {
@@ -411,6 +445,170 @@ InModuleScope $DSCResourceName {
                 Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
                 Assert-MockCalled -commandName New-DfsReplicatedFolder -Exactly 0
                 Assert-MockCalled -commandName Remove-DfsReplicatedFolder -Exactly 0
+            }
+        }
+
+        Context 'Replication Group with Fullmesh topology exists and is correct' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock New-DfsReplicationGroup
+            Mock Set-DfsReplicationGroup
+            Mock Remove-DfsReplicationGroup
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Add-DfsrMember
+            Mock Remove-DfsrMember
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock New-DfsReplicatedFolder
+            Mock Remove-DfsReplicatedFolder
+            Mock Get-DfsrConnection -MockWith { @($Global:RepGroupConnections[0]) } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[0].SourceComputerName }
+            Mock Get-DfsrConnection -MockWith { @($Global:RepGroupConnections[1]) } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[1].SourceComputerName }
+            Mock Add-DfsrConnection
+            Mock Set-DfsrConnection
+
+            It 'should not throw error' {
+                { 
+                    $Splat = $Global:RepGroup.Clone()
+                    $Splat.Topology = 'Fullmesh'
+                    Set-TargetResource @Splat
+                } | Should Not Throw
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Set-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Add-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrConnection -Exactly 2
+                Assert-MockCalled -commandName Add-DfsrConnection -Exactly 0
+                Assert-MockCalled -commandName Set-DfsrConnection -Exactly 0
+            }
+        }
+
+        Context 'Replication Group with Fullmesh topology exists and has one missing connection' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock New-DfsReplicationGroup
+            Mock Set-DfsReplicationGroup
+            Mock Remove-DfsReplicationGroup
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Add-DfsrMember
+            Mock Remove-DfsrMember
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock New-DfsReplicatedFolder
+            Mock Remove-DfsReplicatedFolder
+            Mock Get-DfsrConnection -MockWith { } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[0].SourceComputerName }
+            Mock Get-DfsrConnection -MockWith { @($Global:RepGroupConnections[1]) } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[1].SourceComputerName }
+            Mock Add-DfsrConnection
+            Mock Set-DfsrConnection
+
+            It 'should not throw error' {
+                { 
+                    $Splat = $Global:RepGroup.Clone()
+                    $Splat.Topology = 'Fullmesh'
+                    Set-TargetResource @Splat
+                } | Should Not Throw
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Set-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Add-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrConnection -Exactly 2
+                Assert-MockCalled -commandName Add-DfsrConnection -Exactly 1
+                Assert-MockCalled -commandName Set-DfsrConnection -Exactly 0
+            }
+        }
+
+        Context 'Replication Group with Fullmesh topology exists and has all connections missing' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock New-DfsReplicationGroup
+            Mock Set-DfsReplicationGroup
+            Mock Remove-DfsReplicationGroup
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Add-DfsrMember
+            Mock Remove-DfsrMember
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock New-DfsReplicatedFolder
+            Mock Remove-DfsReplicatedFolder
+            Mock Get-DfsrConnection -MockWith { } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[0].SourceComputerName }
+            Mock Get-DfsrConnection -MockWith { } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[1].SourceComputerName }
+            Mock Add-DfsrConnection
+            Mock Set-DfsrConnection
+
+            It 'should not throw error' {
+                { 
+                    $Splat = $Global:RepGroup.Clone()
+                    $Splat.Topology = 'Fullmesh'
+                    Set-TargetResource @Splat
+                } | Should Not Throw
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Set-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Add-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrConnection -Exactly 2
+                Assert-MockCalled -commandName Add-DfsrConnection -Exactly 2
+                Assert-MockCalled -commandName Set-DfsrConnection -Exactly 0
+            }
+        }
+
+        Context 'Replication Group with Fullmesh topology exists and has a disabled connection' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock New-DfsReplicationGroup
+            Mock Set-DfsReplicationGroup
+            Mock Remove-DfsReplicationGroup
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Add-DfsrMember
+            Mock Remove-DfsrMember
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock New-DfsReplicatedFolder
+            Mock Remove-DfsReplicatedFolder
+            Mock Get-DfsrConnection -MockWith { @($Global:RepGroupConnectionDisabled) } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[0].SourceComputerName }
+            Mock Get-DfsrConnection -MockWith { @($Global:RepGroupConnections[1]) } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[1].SourceComputerName }
+            Mock Add-DfsrConnection
+            Mock Set-DfsrConnection
+
+            It 'should not throw error' {
+                { 
+                    $Splat = $Global:RepGroup.Clone()
+                    $Splat.Topology = 'Fullmesh'
+                    Set-TargetResource @Splat
+                } | Should Not Throw
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Set-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Add-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrConnection -Exactly 2
+                Assert-MockCalled -commandName Add-DfsrConnection -Exactly 0
+                Assert-MockCalled -commandName Set-DfsrConnection -Exactly 1
             }
         }
     }
@@ -559,6 +757,91 @@ InModuleScope $DSCResourceName {
                 Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
             }
         }
+
+        Context 'Replication Group Fullmesh Topology is required and correct' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock Get-DfsrConnection -MockWith { @($Global:RepGroupConnections[0]) } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[0].SourceComputerName }
+            Mock Get-DfsrConnection -MockWith { @($Global:RepGroupConnections[1]) } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[1].SourceComputerName }
+
+            It 'should return true' {
+                $Splat = $Global:RepGroup.Clone()
+                $Splat.Topology = 'Fullmesh'
+                Test-TargetResource @Splat | Should Be $True
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrConnection -Exactly 2
+            }
+        }
+
+        Context 'Replication Group Fullmesh Topology is required and one connection missing' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock Get-DfsrConnection -MockWith { @($Global:RepGroupConnections[0]) } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[0].SourceComputerName }
+            Mock Get-DfsrConnection -MockWith { } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[1].SourceComputerName }
+
+            It 'should return false' {
+                $Splat = $Global:RepGroup.Clone()
+                $Splat.Topology = 'Fullmesh'
+                Test-TargetResource @Splat | Should Be $False
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrConnection -Exactly 2
+            }
+        }
+
+        Context 'Replication Group Fullmesh Topology is required and all connections missing' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock Get-DfsrConnection -MockWith { } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[0].SourceComputerName }
+            Mock Get-DfsrConnection -MockWith { } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[1].SourceComputerName }
+
+            It 'should return false' {
+                $Splat = $Global:RepGroup.Clone()
+                $Splat.Topology = 'Fullmesh'
+                Test-TargetResource @Splat | Should Be $False
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrConnection -Exactly 2
+            }
+        }
+
+        Context 'Replication Group Fullmesh Topology is required and connection is disabled' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock Get-DfsrConnection -MockWith { @($Global:RepGroupConnectionDisabled) } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[0].SourceComputerName }
+            Mock Get-DfsrConnection -MockWith { @($Global:RepGroupConnections[1]) } -ParameterFilter { $SourceComputerName -eq $Global:RepGroupConnections[1].SourceComputerName }
+
+            It 'should return false' {
+                $Splat = $Global:RepGroup.Clone()
+                $Splat.Topology = 'Fullmesh'
+                Test-TargetResource @Splat | Should Be $False
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrConnection -Exactly 2
+            }
+        }
+
     }
 
 ######################################################################################

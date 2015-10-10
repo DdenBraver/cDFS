@@ -48,18 +48,33 @@ InModuleScope $DSCResourceName {
         Description = 'Test Description'
         Members = @('FileServer1','FileServer2')
         Folders = @('Folder1','Folder2')
+        Topology = 'Manual'
         DomainName = 'CONTOSO.COM'
     }
-    $Global:RepGroupConnection = [PSObject]@{
-        GroupName = 'Test Group'
-        SourceComputerName = $Global:RepGroup.Members[0]
-        DestinationComputerName = $Global:RepGroup.Members[1]
-        Ensure = 'Present'
-        Description = 'Connection Description'
-        DisableConnection = $false
-        DisableRDC = $false
-        DomainName = 'CONTOSO.COM'
-    }
+    $Global:RepGroupConnections = @(
+        [PSObject]@{
+            GroupName = 'Test Group'
+            SourceComputerName = $Global:RepGroup.Members[0]
+            DestinationComputerName = $Global:RepGroup.Members[1]
+            Ensure = 'Present'
+            Description = 'Connection Description'
+            DisableConnection = $false
+            DisableRDC = $false
+            DomainName = 'CONTOSO.COM'
+        },
+        [PSObject]@{
+            GroupName = 'Test Group'
+            SourceComputerName = $Global:RepGroup.Members[1]
+            DestinationComputerName = $Global:RepGroup.Members[0]
+            Ensure = 'Present'
+            Description = 'Connection Description'
+            DisableConnection = $false
+            DisableRDC = $false
+            DomainName = 'CONTOSO.COM'
+        }
+    )
+    $Global:RepGroupConnectionDisabled = $Global:RepGroupConnections[0].Clone()
+    $Global:RepGroupConnectionDisabled.DisableConnection = $True
     $Global:MockRepGroup = [PSObject]@{
         GroupName = $Global:RepGroup.GroupName
         DomainName = $Global:RepGroup.DomainName
@@ -125,9 +140,9 @@ InModuleScope $DSCResourceName {
 
             It 'should return absent replication group connection' {
                 $Result = Get-TargetResource `
-                    -GroupName $Global:RepGroupConnection.GroupName `
-                    -SourceComputerName $Global:RepGroupConnection.SourceComputerName `
-                    -DestinationComputerName $Global:RepGroupConnection.DestinationComputerName `
+                    -GroupName $Global:RepGroupConnections[0].GroupName `
+                    -SourceComputerName $Global:RepGroupConnections[0].SourceComputerName `
+                    -DestinationComputerName $Global:RepGroupConnections[0].DestinationComputerName `
                     -Ensure Present
                 $Result.Ensure | Should Be 'Absent'
             }
@@ -142,18 +157,18 @@ InModuleScope $DSCResourceName {
 
             It 'should return correct replication group' {
                 $Result = Get-TargetResource `
-                    -GroupName $Global:RepGroupConnection.GroupName `
-                    -SourceComputerName $Global:RepGroupConnection.SourceComputerName `
-                    -DestinationComputerName $Global:RepGroupConnection.DestinationComputerName `
+                    -GroupName $Global:RepGroupConnections[0].GroupName `
+                    -SourceComputerName $Global:RepGroupConnections[0].SourceComputerName `
+                    -DestinationComputerName $Global:RepGroupConnections[0].DestinationComputerName `
                     -Ensure Present
                 $Result.Ensure | Should Be 'Present'
-                $Result.GroupName | Should Be $Global:RepGroupConnection.GroupName
-                $Result.SourceComputerName | Should Be $Global:RepGroupConnection.SourceComputerName
-                $Result.DestinationComputerName | Should Be $Global:RepGroupConnection.DestinationComputerName
-                $Result.Description | Should Be $Global:RepGroupConnection.Description
-                $Result.DisableConnection | Should Be $Global:RepGroupConnection.DisableConnection
-                $Result.DisableRDC | Should Be $Global:RepGroupConnection.DisableRDC
-                $Result.DomainName | Should Be $Global:RepGroupConnection.DomainName
+                $Result.GroupName | Should Be $Global:RepGroupConnections[0].GroupName
+                $Result.SourceComputerName | Should Be $Global:RepGroupConnections[0].SourceComputerName
+                $Result.DestinationComputerName | Should Be $Global:RepGroupConnections[0].DestinationComputerName
+                $Result.Description | Should Be $Global:RepGroupConnections[0].Description
+                $Result.DisableConnection | Should Be $Global:RepGroupConnections[0].DisableConnection
+                $Result.DisableRDC | Should Be $Global:RepGroupConnections[0].DisableRDC
+                $Result.DomainName | Should Be $Global:RepGroupConnections[0].DomainName
             }
             It 'should call the expected mocks' {
                 Assert-MockCalled -commandName Get-DfsrConnection -Exactly 1
@@ -174,7 +189,7 @@ InModuleScope $DSCResourceName {
 
             It 'should not throw error' {
                 { 
-                    $Splat = $Global:RepGroupConnection.Clone()
+                    $Splat = $Global:RepGroupConnections[0].Clone()
                     Set-TargetResource @Splat
                 } | Should Not Throw
             }
@@ -195,7 +210,7 @@ InModuleScope $DSCResourceName {
 
             It 'should not throw error' {
                 { 
-                    $Splat = $Global:RepGroupConnection.Clone()
+                    $Splat = $Global:RepGroupConnections[0].Clone()
                     $Splat.Description = 'Changed'
                     Set-TargetResource @Splat
                 } | Should Not Throw
@@ -217,7 +232,7 @@ InModuleScope $DSCResourceName {
 
             It 'should not throw error' {
                 { 
-                    $Splat = $Global:RepGroupConnection.Clone()
+                    $Splat = $Global:RepGroupConnections[0].Clone()
                     $Splat.DisableConnection = (-not $Splat.DisableConnection)
                     Set-TargetResource @Splat
                 } | Should Not Throw
@@ -239,7 +254,7 @@ InModuleScope $DSCResourceName {
 
             It 'should not throw error' {
                 { 
-                    $Splat = $Global:RepGroupConnection.Clone()
+                    $Splat = $Global:RepGroupConnections[0].Clone()
                     $Splat.DisableRDC = (-not $Splat.DisableRDC)
                     $Splat.Description = 'Changed'
                     Set-TargetResource @Splat
@@ -263,7 +278,7 @@ InModuleScope $DSCResourceName {
 
             It 'should not throw error' {
                 { 
-                    $Splat = $Global:RepGroupConnection.Clone()
+                    $Splat = $Global:RepGroupConnections[0].Clone()
                     $Splat.Ensure = 'Absent'
                     Set-TargetResource @Splat
                 } | Should Not Throw
@@ -285,7 +300,7 @@ InModuleScope $DSCResourceName {
 
             It 'should not throw error' {
                 { 
-                    $Splat = $Global:RepGroupConnection.Clone()
+                    $Splat = $Global:RepGroupConnections[0].Clone()
                    Set-TargetResource @Splat
                 } | Should Not Throw
             }
@@ -306,7 +321,7 @@ InModuleScope $DSCResourceName {
             Mock Get-DfsrConnection
 
             It 'should return false' {
-                $Splat = $Global:RepGroupConnection.Clone()
+                $Splat = $Global:RepGroupConnections[0].Clone()
                 Test-TargetResource @Splat | Should Be $False 
                 
             }
@@ -320,7 +335,7 @@ InModuleScope $DSCResourceName {
             Mock Get-DfsrConnection -MockWith { @($Global:MockRepGroupConnection) }
 
             It 'should return false' {
-                $Splat = $Global:RepGroupConnection.Clone()
+                $Splat = $Global:RepGroupConnections[0].Clone()
                 $Splat.Description = 'Changed'
                 Test-TargetResource @Splat | Should Be $False
             }
@@ -334,7 +349,7 @@ InModuleScope $DSCResourceName {
             Mock Get-DfsrConnection -MockWith { @($Global:MockRepGroupConnection) }
 
             It 'should return false' {
-                $Splat = $Global:RepGroupConnection.Clone()
+                $Splat = $Global:RepGroupConnections[0].Clone()
                 $Splat.DisableConnection = (-not $Splat.DisableConnection)
                 Test-TargetResource @Splat | Should Be $False
             }
@@ -348,7 +363,7 @@ InModuleScope $DSCResourceName {
             Mock Get-DfsrConnection -MockWith { @($Global:MockRepGroupConnection) }
 
             It 'should return false' {
-                $Splat = $Global:RepGroupConnection.Clone()
+                $Splat = $Global:RepGroupConnections[0].Clone()
                 $Splat.DisableRDC = (-not $Splat.DisableRDC)
                 Test-TargetResource @Splat | Should Be $False
             }
@@ -362,7 +377,7 @@ InModuleScope $DSCResourceName {
             Mock Get-DfsrConnection -MockWith { @($Global:MockRepGroupConnection) }
 
             It 'should return false' {
-                $Splat = $Global:RepGroupConnection.Clone()
+                $Splat = $Global:RepGroupConnections[0].Clone()
                 $Splat.Ensure = 'Absent'
                 Test-TargetResource @Splat | Should Be $False
             }
@@ -376,7 +391,7 @@ InModuleScope $DSCResourceName {
             Mock Get-DfsrConnection -MockWith { @($Global:MockRepGroupConnection) }
 
             It 'should return true' {
-                $Splat = $Global:RepGroupConnection.Clone()
+                $Splat = $Global:RepGroupConnections[0].Clone()
                 Test-TargetResource @Splat | Should Be $True
             }
             It 'should call expected Mocks' {
