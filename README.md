@@ -33,11 +33,25 @@ This resource is used to create, edit or remove DFS Replication Groups. If used 
 
 #### Parameters
 * **GroupName**: The name of the Replication Group. Required.
-* **Ensure**: Ensures that Replicatio Group is either Absent or Present. Required.
+* **Ensure**: Ensures that Replication Group is either Absent or Present. Required.
 * **Description**: A description for the Replication Group. Optional.
 * **Members**: A list of computers that are members of this Replication Group. Optional.
 * **Folders**: A list of folders that are replicated in this Replication Group. Optional.
+* **Topology**: This allows a replication topology to assign to the Replication Group. It defaults to Manual, which will not automatically create a topology. If set to Fullmesh, a full mesh topology will be assigned. Optional.
 * **DomainName**: The AD domain the Replication Group should created in. Optional.
+
+### cDFSRepGroupConnection
+This resource is used to create, edit and remove DFS Replication Group connections. This resource should ONLY be used if the Topology parameter in the Resource Group is set to Manual.
+
+#### Parameters
+* **GroupName**: The name of the Replication Group. Required.
+* **Ensure**: Ensures that Replication Group connection is either Absent or Present. Required.
+* **SourceComputerName**: The name of the Replication Group source computer for the connection. Required.
+* **DestinationComputerName**: The name of the Replication Group destination computer for the connection. Required.
+* **Description**: A description for the Replication Group connection. Optional.
+* **DisableConnection**: Set to $true to disable this connection. Optional.
+* **RDCDisable**: Set to $true to disable remote differention compression on this connection. Optional.
+* **DomainName**: The AD domain the Replication Group connection should created in. Optional.
 
 ### cDFSRepGroupFolder
 This resource is used to configure DFS Replication Group folders. This is an optional resource, and only needs to be used if the folder Description, FilenameToExclude or DirectoryNameToExclude fields need to be set. In most cases just setting the Folders property in the cDFSRepGroup resource will be acceptable.
@@ -63,7 +77,7 @@ This resource is used to configure Replication Group Folder Membership. It is us
 * **DomainName**: The AD domain the Replication Group should created in. Optional.
 
 #### Examples
-Create a DFS Replication Group called Public containing two members, FileServer1 and FileServer2. The Replication Group contains a single folder called Software. A description will be set on the Software folder and it will be set to exclude the directory Temp from replication.
+Create a DFS Replication Group called Public containing two members, FileServer1 and FileServer2. The Replication Group contains a single folder called Software. A description will be set on the Software folder and it will be set to exclude the directory Temp from replication. A manual topology is assigned to the replication connections.
 ```powershell
 configuration Sample_cDFSRepGroup
 {
@@ -89,6 +103,90 @@ configuration Sample_cDFSRepGroup
             Ensure = 'Present'
             Members = 'FileServer1','FileServer2'
             Folders = 'Software'
+            PSDSCRunAsCredential = $Credential
+            DependsOn = "[WindowsFeature]RSATDFSMgmtConInstall"
+        } # End of RGPublic Resource
+
+        cDFSRepGroupConnection RGPublicC1
+        {
+            GroupName = 'Public'
+            Ensure = 'Present'
+            SourceComputerName = 'FileServer1'
+            DestinationComputerName = 'FileServer2'
+            PSDSCRunAsCredential = $Credential
+        } # End of cDFSRepGroupConnection Resource
+
+        cDFSRepGroupConnection RGPublicC2
+        {
+            GroupName = 'Public'
+            Ensure = 'Present'
+            SourceComputerName = 'FileServer2'
+            DestinationComputerName = 'FileServer1'
+            PSDSCRunAsCredential = $Credential
+        } # End of cDFSRepGroupConnection Resource
+
+        cDFSRepGroupFolder RGSoftwareFolder
+        {
+            GroupName = 'Public'
+            FolderName = 'Software'
+            Description = 'DFS Share for storing software installers'
+            DirectoryNameToExclude = 'Temp'
+            PSDSCRunAsCredential = $Credential
+            DependsOn = '[cDFSRepGroup]RGPublic'
+        } # End of RGPublic Resource
+
+        cDFSRepGroupMembership RGPublicSoftwareFS1
+        {
+            GroupName = 'Public'
+            FolderName = 'Software'
+            ComputerName = 'FileServer1'
+            ContentPath = 'd:\Public\Software'
+            PSDSCRunAsCredential = $Credential
+            DependsOn = '[cDFSRepGroupFolder]RGSoftwareFolder'
+        } # End of RGPublicSoftwareFS1 Resource
+
+        cDFSRepGroupMembership RGPublicSoftwareFS2
+        {
+            GroupName = 'Public'
+            FolderName = 'Software'
+            ComputerName = 'FileServer2'
+            ContentPath = 'e:\Data\Public\Software'
+            PSDSCRunAsCredential = $Credential
+            DependsOn = '[cDFSRepGroupFolder]RGPublicSoftwareFS1'
+        } # End of RGPublicSoftwareFS2 Resource
+
+    } # End of Node
+} # End of Configuration
+```
+
+
+Create a DFS Replication Group called Public containing two members, FileServer1 and FileServer2. The Replication Group contains a single folder called Software. A description will be set on the Software folder and it will be set to exclude the directory Temp from replication. An automatic fullmesh topology is assigned to the replication group connections.
+```powershell
+configuration Sample_cDFSRepGroup_FullMesh
+{
+    Import-DscResource -Module cDFS
+
+    Node $NodeName
+    {
+        [PSCredential]$Credential = New-Object System.Management.Automation.PSCredential ("CONTOSO.COM\Administrator", (ConvertTo-SecureString $"MyP@ssw0rd!1" -AsPlainText -Force))
+
+        # Install the Prerequisite features first
+        # Requires Windows Server 2012 R2 Full install
+        WindowsFeature RSATDFSMgmtConInstall 
+        { 
+            Ensure = "Present" 
+            Name = "RSAT-DFS-Mgmt-Con" 
+        }
+
+        # Configure the Replication Group
+        cDFSRepGroup RGPublic
+        {
+            GroupName = 'Public'
+            Description = 'Public files for use by all departments'
+            Ensure = 'Present'
+            Members = 'FileServer1','FileServer2'
+            Folders = 'Software'
+            Topology = 'Fullmesh'
             PSDSCRunAsCredential = $Credential
             DependsOn = "[WindowsFeature]RSATDFSMgmtConInstall"
         } # End of RGPublic Resource
@@ -128,6 +226,10 @@ configuration Sample_cDFSRepGroup
 ```
 
 ## Versions
+
+### 1.1.0.0
+
+* cDFSRepGroupConnection- Resource added.
 
 ### 1.0.0.0
 

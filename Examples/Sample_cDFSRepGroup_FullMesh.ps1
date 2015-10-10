@@ -1,4 +1,4 @@
-configuration Sample_cDFSRepGroup
+configuration Sample_cDFSRepGroup_FullMesh
 {
     Import-DscResource -Module cDFS
 
@@ -22,27 +22,10 @@ configuration Sample_cDFSRepGroup
             Ensure = 'Present'
             Members = 'FileServer1','FileServer2'
             Folders = 'Software'
+            Topology = 'Fullmesh'
             PSDSCRunAsCredential = $Credential
             DependsOn = "[WindowsFeature]RSATDFSMgmtConInstall"
         } # End of RGPublic Resource
-
-        cDFSRepGroupConnection RGPublicC1
-        {
-            GroupName = 'Public'
-            Ensure = 'Present'
-            SourceComputerName = 'FileServer1'
-            DestinationComputerName = 'FileServer2'
-            PSDSCRunAsCredential = $Credential
-        } # End of cDFSRepGroupConnection Resource
-
-        cDFSRepGroupConnection RGPublicC2
-        {
-            GroupName = 'Public'
-            Ensure = 'Present'
-            SourceComputerName = 'FileServer2'
-            DestinationComputerName = 'FileServer1'
-            PSDSCRunAsCredential = $Credential
-        } # End of cDFSRepGroupConnection Resource
 
         cDFSRepGroupFolder RGSoftwareFolder
         {

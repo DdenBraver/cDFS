@@ -76,6 +76,7 @@ function Get-TargetResource
             DomainName = $RepGroup.DomainName
             Members = (Get-DfsrMember @Splat -ErrorAction Stop).ComputerName
             Folders = (Get-DfsReplicatedFolder @Splat -ErrorAction Stop).FolderName
+            Topology = 'Manual'
         }
     } Else {       
         Write-Verbose -Message ( @(
@@ -112,6 +113,10 @@ function Set-TargetResource
 
         [String[]]
         $Folders,
+
+        [ValidateSet('Fullmesh','Manual')]
+        [String]
+        $Topology = 'Manual',
 
         [String]
         $DomainName
@@ -224,6 +229,12 @@ function Set-TargetResource
                     ) -join '' )
             }
         }
+
+        # If the topology is not manual, automatically configure the connections
+        switch ($Topology) {
+            'Fullmesh' {
+            }
+        }
     } else {
         # The Rep Group should not exist
         Write-Verbose -Message ( @(
@@ -266,6 +277,10 @@ function Test-TargetResource
 
         [String[]]
         $Folders,
+
+        [ValidateSet('Fullmesh','Manual')]
+        [String]
+        $Topology = 'Manual',
 
         [String]
         $DomainName
@@ -328,6 +343,12 @@ function Test-TargetResource
                     $($LocalizedData.RepGroupFoldersNeedUpdateMessage) -f $GroupName,$DomainName
                     ) -join '' )
                 $desiredConfigurationMatch = $false                
+            }
+
+            # If the topology is not manual, check the connections are configured
+            switch ($Topology) {
+                'Fullmesh' {
+                }
             }
         } else {
             # Ths RG doesn't exist but should
