@@ -38,6 +38,7 @@ This resource is used to create, edit or remove DFS Replication Groups. If used 
 * **Members**: A list of computers that are members of this Replication Group. Optional.
 * **Folders**: A list of folders that are replicated in this Replication Group. Optional.
 * **Topology**: This allows a replication topology to assign to the Replication Group. It defaults to Manual, which will not automatically create a topology. If set to Fullmesh, a full mesh topology between all members will be created. Optional.
+* **ContentPaths**: An array of DFS Replication Group Content Paths to use for each of the Folders. This can have one entry for each Folder in the Folders parameter and should be set in th same order. If any entry is not blank then the Content Paths will need to be set manually by using the cDFSRepGroupMembership resource. Optional.
 * **DomainName**: The AD domain the Replication Group should created in. Optional.
 
 ### cDFSRepGroupConnection
@@ -65,7 +66,7 @@ This resource is used to configure DFS Replication Group folders. This is an opt
 * **DomainName**: The AD domain the Replication Group should created in. Optional.
 
 ### cDFSRepGroupMembership
-This resource is used to configure Replication Group Folder Membership. It is usually used to set the **ContentPath** for each Replication Group folder on each Member computer. It can also be used to set additional properties of the Membership.
+This resource is used to configure Replication Group Folder Membership. It is usually used to set the **ContentPath** for each Replication Group folder on each Member computer. It can also be used to set additional properties of the Membership. This resource shouldn't be used for folders where the Content Path is set in the cDFSRepGroup.
 
 #### Parameters
 * **GroupName**: The name of the Replication Group. Required.
@@ -77,6 +78,41 @@ This resource is used to configure Replication Group Folder Membership. It is us
 * **DomainName**: The AD domain the Replication Group should created in. Optional.
 
 #### Examples
+Create a DFS Replication Group called Public containing two members, FileServer1 and FileServer2. The Replication Group contains two folders called Software and Misc. An automatic Full Mesh connection topology will be assigned. The Content Paths for each folder and member will be set to 'd:\public\software' and 'd:\public\misc' respectively:
+```powershell
+configuration Sample_cDFSRepGroup_Simple
+{
+    Import-DscResource -Module cDFS
+
+    Node $NodeName
+    {
+        [PSCredential]$Credential = New-Object System.Management.Automation.PSCredential ("CONTOSO.COM\Administrator", (ConvertTo-SecureString $"MyP@ssw0rd!1" -AsPlainText -Force))
+
+        # Install the Prerequisite features first
+        # Requires Windows Server 2012 R2 Full install
+        WindowsFeature RSATDFSMgmtConInstall 
+        { 
+            Ensure = "Present" 
+            Name = "RSAT-DFS-Mgmt-Con" 
+        }
+
+        # Configure the Replication Group
+        cDFSRepGroup RGPublic
+        {
+            GroupName = 'Public'
+            Description = 'Public files for use by all departments'
+            Ensure = 'Present'
+            Members = 'FileServer1','FileServer2'
+            Folders = 'Software','Misc'
+            Topology = 'Fullmesh'
+            ContentPaths = 'd:\public\software','d:\public\misc'
+            PSDSCRunAsCredential = $Credential
+            DependsOn = "[WindowsFeature]RSATDFSMgmtConInstall"
+        } # End of RGPublic Resource
+    } # End of Node
+} # End of Configuration
+```
+
 Create a DFS Replication Group called Public containing two members, FileServer1 and FileServer2. The Replication Group contains a single folder called Software. A description will be set on the Software folder and it will be set to exclude the directory Temp from replication. A manual topology is assigned to the replication connections.
 ```powershell
 configuration Sample_cDFSRepGroup

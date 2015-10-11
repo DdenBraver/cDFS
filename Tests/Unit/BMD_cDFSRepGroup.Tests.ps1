@@ -114,7 +114,7 @@ InModuleScope $DSCResourceName {
         GroupName = $Global:RepGroup.GroupName
         DomainName = $Global:RepGroup.DomainName
         FolderName = $Global:RepGroup.Folders[0]
-        ComputerName = $Global:RepGroup.ComputerName
+        ComputerName = $Global:RepGroup.Members[0]
         ContentPath = 'd:\public\software\'
         StagingPath = 'd:\public\software\DfsrPrivate\Staging\'
         ConflictAndDeletedPath = 'd:\public\software\DfsrPrivate\ConflictAndDeleted\'
@@ -129,6 +129,8 @@ InModuleScope $DSCResourceName {
         RDCEnabled = (-not $Global:RepGroupConnections[0].DisableRDC)
         DomainName = $Global:RepGroupConnections[0].DomainName
     }
+    $Global:RepGroupContentPath = $Global:RepGroup.Clone()
+    $Global:RepGroupContentPath += @{ ContentPaths = @($Global:MockRepGroupMembership.ContentPath) }
 
 ######################################################################################
 
@@ -137,6 +139,8 @@ InModuleScope $DSCResourceName {
         Context 'No replication groups exist' {
             
             Mock Get-DfsReplicationGroup
+            Mock Get-DfsrMember
+            Mock Get-DfsReplicatedFolder
 
             It 'should return absent replication group' {
                 $Result = Get-TargetResource `
@@ -146,6 +150,8 @@ InModuleScope $DSCResourceName {
             }
             It 'should call the expected mocks' {
                 Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 0
             }
         }
 
@@ -611,6 +617,81 @@ InModuleScope $DSCResourceName {
                 Assert-MockCalled -commandName Set-DfsrConnection -Exactly 1
             }
         }
+
+        Context 'Replication Group Content Path is set but needs to be changed' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock New-DfsReplicationGroup
+            Mock Set-DfsReplicationGroup
+            Mock Remove-DfsReplicationGroup
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Add-DfsrMember
+            Mock Remove-DfsrMember
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock New-DfsReplicatedFolder
+            Mock Remove-DfsReplicatedFolder
+            Mock Get-DfsrMembership -MockWith { @($Global:MockRepGroupMembership) }
+            Mock Set-DfsrMembership
+
+            It 'should not throw error' {
+                { 
+                    $Splat = $Global:RepGroupContentPath.Clone()
+                    $Splat.ContentPaths = @('Different')
+                    Set-TargetResource @Splat
+                } | Should Not Throw
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Set-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Add-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrMembership -Exactly 1
+                Assert-MockCalled -commandName Set-DfsrMembership -Exactly 1
+            }
+        }
+
+        Context 'Replication Group Content Path is set and does not need to be changed' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock New-DfsReplicationGroup
+            Mock Set-DfsReplicationGroup
+            Mock Remove-DfsReplicationGroup
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Add-DfsrMember
+            Mock Remove-DfsrMember
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock New-DfsReplicatedFolder
+            Mock Remove-DfsReplicatedFolder
+            Mock Get-DfsrMembership -MockWith { @($Global:MockRepGroupMembership) }
+            Mock Set-DfsrMembership
+
+            It 'should not throw error' {
+                { 
+                    $Splat = $Global:RepGroupContentPath.Clone()
+                    Set-TargetResource @Splat
+                } | Should Not Throw
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Set-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Add-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrMembership -Exactly 1
+                Assert-MockCalled -commandName Set-DfsrMembership -Exactly 0
+            }
+        }
     }
 
 ######################################################################################
@@ -842,6 +923,44 @@ InModuleScope $DSCResourceName {
             }
         }
 
+        Context 'Replication Group Content Path is set and different' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock Get-DfsrMembership -MockWith { @($Global:MockRepGroupMembership) }
+
+            It 'should return false' {
+                $Splat = $Global:RepGroupContentPath.Clone()
+                $Splat.ContentPaths = @('Different')
+                Test-TargetResource @Splat | Should Be $False
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrMembership -Exactly 1
+            }
+        }
+
+        Context 'Replication Group Content Path is set and the same' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock Get-DfsrMembership -MockWith { @($Global:MockRepGroupMembership) }
+
+            It 'should return true' {
+                $Splat = $Global:RepGroupContentPath.Clone()
+                Test-TargetResource @Splat | Should Be $True
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrMembership -Exactly 1
+            }
+        }
     }
 
 ######################################################################################

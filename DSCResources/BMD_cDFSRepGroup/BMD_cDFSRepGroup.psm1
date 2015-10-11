@@ -20,13 +20,15 @@ RepGroupMemberAddedMessage=DFS Replication Group "{0}" added member "{2}".
 RepGroupMemberRemovedMessage=DFS Replication Group "{0}" removed member "{2}".
 RepGroupFolderAddedMessage=DFS Replication Group "{0}" added folder "{2}".
 RepGroupFolderRemovedMessage=DFS Replication Group "{0}" removed folder "{2}".
+RepGroupContentPathUpdatedMessage=DFS Replication Group "{0}" Content Path for "{2}" updated.
 RepGroupExistsRemovedMessage=DFS Replication Group "{0}" existed, but has been removed.
 RepGroupFullMeshConnectionAddedMessage=DFS Replication Group "{0}" Fullmesh Connection from "{2}" to "{3}" added.
 RepGroupFullMeshConnectionUpdatedMessage=DFS Replication Group "{0}" Fullmesh Connection from "{2}" to "{3}" updated.
 TestingRegGroupMessage=Testing DFS Replication Group "{0}".
 RepGroupDescriptionNeedsUpdateMessage=DFS Replication Group "{0}" description is different. Change required.
 RepGroupMembersNeedUpdateMessage=DFS Replication Group "{0}" members are different. Change required.
-RepGrouFoldersNeedUpdateMessage=DFS Replication Group "{0}" folders are different. Change required.
+RepGroupFoldersNeedUpdateMessage=DFS Replication Group "{0}" folders are different. Change required.
+RepGroupContentPathNeedUpdateMessage=DFS Replication Group "{0}" Content Path for "{2}" is different. Change required.
 RepGroupDoesNotExistButShouldMessage=DFS Replication Group "{0}" does not exist but should. Change required.
 RepGroupExistsButShouldNotMessage=DFS Replication Group "{0}" exists but should not. Change required.
 RepGroupDoesNotExistAndShouldNotMessage=DFS Replication Group "{0}" does not exist and should not. Change not required.
@@ -83,6 +85,7 @@ function Get-TargetResource
             Members = (Get-DfsrMember @Splat -ErrorAction Stop).ComputerName
             Folders = (Get-DfsReplicatedFolder @Splat -ErrorAction Stop).FolderName
             Topology = 'Manual'
+            ContentPaths = ''
         }
     } Else {       
         Write-Verbose -Message ( @(
@@ -125,6 +128,9 @@ function Set-TargetResource
         [String]
         $Topology = 'Manual',
 
+        [String[]]
+        $ContentPaths,
+
         [String]
         $DomainName
     )
@@ -165,7 +171,7 @@ function Set-TargetResource
                     $($LocalizedData.RepGroupDescriptionUpdatedMessage) `
                         -f $GroupName,$DomainName
                     ) -join '' )
-            }
+            } # if
 
         } else {
             # Ths Rep Groups doesn't exist - Create it
@@ -176,7 +182,7 @@ function Set-TargetResource
                 ) -join '' )
             if ($Description) {
                 $Splat += @{ Description = $Description }
-            }
+            } # if
             New-DfsReplicationGroup @Splat -ErrorAction Stop
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
@@ -184,7 +190,7 @@ function Set-TargetResource
                     -f $GroupName,$DomainName
                 ) -join '' )
 
-        }
+        } # if
 
         # Clean up the splat so we can use it in the next cmdlets
         $Splat.Remove('Description')
@@ -202,8 +208,8 @@ function Set-TargetResource
                     $($LocalizedData.RepGroupMemberAddedMessage) `
                         -f $GroupName,$DomainName,$Member
                     ) -join '' )
-            }
-        }
+            } # if
+        } # foreach
 
         # Remove any members that shouldn't exist
         foreach ($ExistingMember in $ExistingMembers) {
@@ -215,8 +221,8 @@ function Set-TargetResource
                     $($LocalizedData.RepGroupMemberRemovedMessage) `
                         -f $GroupName,$DomainName,$ExistingMember
                     ) -join '' )
-            }
-        }
+            } # if
+        } # foreach
 
         # Get the existing folders of this DFS Rep Group
         $ExistingFolders = (Get-DfsReplicatedFolder @Splat -ErrorAction Stop).FolderName
@@ -231,8 +237,8 @@ function Set-TargetResource
                     $($LocalizedData.RepGroupFolderAddedMessage) `
                         -f $GroupName,$DomainName,$Folder
                     ) -join '' )
-            }
-        }
+            } # if
+        } # foreach
 
         # Remove any folders that shouldn't exist
         foreach ($ExistingFolder in $ExistingFolders) {
@@ -244,8 +250,32 @@ function Set-TargetResource
                     $($LocalizedData.RepGroupFolderRemovedMessage) `
                         -f $GroupName,$DomainName,$ExistingFolder
                     ) -join '' )
-            }
-        }
+            } # if
+        } # foreach
+
+        # Set the content paths (if any were passed in the array)
+        if ($ContentPaths) {
+            # Scan through the content paths array
+            for ($i=0; $i -lt $Folders.Count; $i++) {
+                $ContentPath = $ContentPaths[$i]
+                if ($ContentPath) {
+                    Get-DfsrMembership @Splat -ErrorAction Stop | Foreach-Object {
+                        if ($_.ContentPath -ne $ContentPath) {
+                            # The Content Path for this member needs to be set
+                            Set-DfsrMembership @Splat `
+                                -FolderName $_.FolderName `
+                                -ComputerName $_.ComputerName `
+                                -ContentPath $ContentPath
+                            Write-Verbose -Message ( @(
+                                "$($MyInvocation.MyCommand): "
+                                $($LocalizedData.RepGroupContentPathUpdatedMessage) `
+                                    -f $GroupName,$DomainName,$_.ComputerName
+                                ) -join '' )
+                        } # if
+                    } # foreach
+                } # if
+            } # foreach
+        } # if
 
         # If the topology is not manual, automatically configure the connections
         switch ($Topology) {
@@ -279,11 +309,11 @@ function Set-TargetResource
                                     $($LocalizedData.RepGroupFullMeshConnectionAddedMessage) `
                                     -f  $GroupName,$DomainName,$source,$dest
                                 ) -join '' )
-                        }
-                    }
-                }
+                        } # if
+                    } # foreach
+                } # foreach
             }
-        }
+        } # swtich
     } else {
         # The Rep Group should not exist
         Write-Verbose -Message ( @(
@@ -332,6 +362,9 @@ function Test-TargetResource
         [ValidateSet('Fullmesh','Manual')]
         [String]
         $Topology = 'Manual',
+
+        [String[]]
+        $ContentPaths,
 
         [String]
         $DomainName
@@ -400,6 +433,26 @@ function Test-TargetResource
                     ) -join '' )
                 $desiredConfigurationMatch = $false             
             }
+
+            # Get the content paths (if any were passed in the array)
+            if ($ContentPaths) {
+                # Scan through the content paths array
+                for ($i=0; $i -lt $Folders.Count; $i++) {
+                    $ContentPath = $ContentPaths[$i]
+                    if ($ContentPath) {
+                        Get-DfsrMembership @Splat -ErrorAction Stop | Foreach-object {
+                            if ($_.ContentPath -ne $ContentPath) {
+                                Write-Verbose -Message ( @(
+                                    "$($MyInvocation.MyCommand): "
+                                    $($LocalizedData.RepGroupContentPathNeedUpdateMessage) `
+                                        -f $GroupName,$DomainName,$_.ComputerName
+                                    ) -join '' )
+                                $desiredConfigurationMatch = $false
+                            } # if
+                        } # if
+                    } # if
+                } # foreach
+            } # if
 
             # If the topology is not manual, check the connections are configured
             switch ($Topology) {
