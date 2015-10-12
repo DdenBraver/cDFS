@@ -255,23 +255,29 @@ function Set-TargetResource
 
         # Set the content paths (if any were passed in the array)
         if ($ContentPaths) {
+            # Get the current memberships for this rep group
+            $memberships = Get-DfsrMembership @Splat -ErrorAction Stop
             # Scan through the content paths array
             for ($i=0; $i -lt $Folders.Count; $i++) {
                 $ContentPath = $ContentPaths[$i]
                 if ($ContentPath) {
-                    Get-DfsrMembership @Splat -ErrorAction Stop | Foreach-Object {
-                        if ($_.ContentPath -ne $ContentPath) {
-                            # The Content Path for this member needs to be set
-                            Set-DfsrMembership @Splat `
-                                -FolderName $_.FolderName `
-                                -ComputerName $_.ComputerName `
-                                -ContentPath $ContentPath
-                            Write-Verbose -Message ( @(
-                                "$($MyInvocation.MyCommand): "
-                                $($LocalizedData.RepGroupContentPathUpdatedMessage) `
-                                    -f $GroupName,$DomainName,$_.ComputerName
-                                ) -join '' )
-                        } # if
+                     foreach ($membership in $memberships) {
+                        if (($membership.ContentPath -eq $ContentPath) `
+                            -or ($membership.FolderName -ne $Folders[$i])){
+                            # Don't check this entry because it doesn't need a change
+                            # or is for a different folder
+                            continue
+                        }
+                        # The Content Path for this member needs to be set
+                        Set-DfsrMembership @Splat `
+                            -FolderName $membership.FolderName `
+                            -ComputerName $membership.ComputerName `
+                            -ContentPath $ContentPath
+                        Write-Verbose -Message ( @(
+                            "$($MyInvocation.MyCommand): "
+                            $($LocalizedData.RepGroupContentPathUpdatedMessage) `
+                                -f $GroupName,$DomainName,$membership.ComputerName
+                            ) -join '' )
                     } # foreach
                 } # if
             } # foreach
@@ -436,19 +442,25 @@ function Test-TargetResource
 
             # Get the content paths (if any were passed in the array)
             if ($ContentPaths) {
+                # Get the current memberships for this rep group
+                $memberships = Get-DfsrMembership @Splat -ErrorAction Stop
                 # Scan through the content paths array
                 for ($i=0; $i -lt $Folders.Count; $i++) {
                     $ContentPath = $ContentPaths[$i]
                     if ($ContentPath) {
-                        Get-DfsrMembership @Splat -ErrorAction Stop | Foreach-object {
-                            if ($_.ContentPath -ne $ContentPath) {
-                                Write-Verbose -Message ( @(
-                                    "$($MyInvocation.MyCommand): "
-                                    $($LocalizedData.RepGroupContentPathNeedUpdateMessage) `
-                                        -f $GroupName,$DomainName,$_.ComputerName
-                                    ) -join '' )
-                                $desiredConfigurationMatch = $false
-                            } # if
+                        Foreach ($membership in $memberships) {
+                            if (($membership.ContentPath -eq $ContentPath) `
+                                -or ($membership.FolderName -ne $Folders[$i])){
+                                # Don't check this entry because it doesn't need a change
+                                # or is for a different folder
+                                continue
+                            }
+                            Write-Verbose -Message ( @(
+                                "$($MyInvocation.MyCommand): "
+                                $($LocalizedData.RepGroupContentPathNeedUpdateMessage) `
+                                    -f $GroupName,$DomainName,$membership.ComputerName
+                                ) -join '' )
+                            $desiredConfigurationMatch = $false
                         } # if
                     } # if
                 } # foreach

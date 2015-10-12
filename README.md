@@ -27,7 +27,7 @@ Because this resource is configuring information within Active Directory, the **
 Please check out common DSC Resources [contributing guidelines](https://github.com/PowerShell/DscResource.Kit/blob/master/CONTRIBUTING.md).
 
 
-## Resources
+## Replication Group Resources
 ### cDFSRepGroup
 This resource is used to create, edit or remove DFS Replication Groups. If used to create a Replcation Group it should be combined with the cDFSRepGroupMembership resources.
 
@@ -262,6 +262,14 @@ configuration Sample_cDFSRepGroup_FullMesh
 ```
 
 ## Versions
+
+### 1.2.1.0
+
+* cDFSRepGroup- Fix to ContentPaths generation when more than one folder is provided.
+
+### 1.2.0.0
+
+* cDFSRepGroup- ContentPaths string array parameter.
 
 ### 1.1.0.0
 
