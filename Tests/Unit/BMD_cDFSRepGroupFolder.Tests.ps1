@@ -75,6 +75,7 @@ InModuleScope $DSCResourceName {
             Description = 'Description 1'
             FileNameToExclude = @('~*','*.bak','*.tmp')
             DirectoryNameToExclude = @()
+            DfsnPath = "\\CONTOSO.COM\Namespace\$($Global:RepGroup.Folders[0])"
         },
         [PSObject]@{
             GroupName = $Global:RepGroup.GroupName
@@ -83,6 +84,7 @@ InModuleScope $DSCResourceName {
             Description = 'Description 2'
             FileNameToExclude = @('~*','*.bak','*.tmp')
             DirectoryNameToExclude = @()
+            DfsnPath = "\\CONTOSO.COM\Namespace\$($Global:RepGroup.Folders[1])"
         }
     )
     $Global:MockRepGroupMembership = [PSObject]@{
@@ -188,6 +190,21 @@ InModuleScope $DSCResourceName {
                 Assert-MockCalled -commandName Set-DfsReplicatedFolder -Exactly 1
             }
         }
+
+        Context 'Replication group folder exists but has different DfsnPath' {
+            
+            Mock Set-DfsReplicatedFolder
+
+            It 'should not throw error' {
+                $Splat = $Global:MockRepGroupFolder[0].Clone()
+                $Splat.DfsnPath = '\\CONTOSO.COM\Public\Different'
+                { Set-TargetResource @Splat } | Should Not Throw
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Set-DfsReplicatedFolder -Exactly 1
+            }
+        }
+
     }
 
 ######################################################################################
@@ -268,6 +285,21 @@ InModuleScope $DSCResourceName {
                 Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
             }
         }
+
+        Context 'Replication group folder exists but has different DfsnPath' {
+            
+            Mock Get-DfsReplicatedFolder -MockWith { return @($Global:MockRepGroupFolder[0]) }
+
+            It 'should return false' {
+                $Splat = $Global:MockRepGroupFolder[0].Clone()
+                $Splat.DfsnPath = '\\CONTOSO.COM\Public\Different'
+                Test-TargetResource @Splat | Should Be $False
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+            }
+        }
+
     }
 
 ######################################################################################

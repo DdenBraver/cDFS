@@ -134,26 +134,8 @@ function Set-TargetResource
             -f $GroupName,$FolderName,$ComputerName,$DomainName
         ) -join '' )
 
-    $Splat = @{ GroupName = $GroupName; FolderName = $FolderName; ComputerName = $ComputerName }
-    $returnValue = $Splat
-    if ($DomainName) {
-        $Splat += @{ DomainName = $DomainName }
-    }
-    if ($ContentPath -ne $null) {
-        $Splat += @{ ContentPath = $ContentPath }
-    }
-    if ($StagingPath) {
-        $Splat += @{ StagingPath = $StagingPath }
-    }
-    if ($ReadOnly -ne $null) {
-        $Splat += @{ ReadOnly = $ReadOnly }
-    }
-    if ($PrimaryMember -ne $null) {
-        $Splat += @{ PrimaryMember = $PrimaryMember }
-    }
-
-    # Now apply the changes that have been loaded into the splat
-    Set-DfsrMembership @Splat -ErrorAction Stop
+    # Now apply the changes
+    Set-DfsrMembership @PSBoundParameters -ErrorAction Stop
 
     Write-Verbose -Message ( @(
         "$($MyInvocation.MyCommand): "
@@ -223,7 +205,8 @@ function Test-TargetResource
             ) -join '' )
 
         # Check the ContentPath
-        if (($ContentPath -ne $null) -and ($RepGroupMembership.ContentPath -ne $ContentPath)) {
+        if (($PSBoundParameters.ContainsKey('ContentPath')) `
+            -and ($RepGroupMembership.ContentPath -ne $ContentPath)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
                 $($LocalizedData.RepGroupMembershipContentPathMismatchMessage) `
@@ -233,7 +216,8 @@ function Test-TargetResource
         }
         
         # Check the StagingPath
-        if (($StagingPath -ne $null) -and ($RepGroupMembership.StagingPath -ne $StagingPath)) {
+        if (($PSBoundParameters.ContainsKey('StagingPath')) `
+            -and ($RepGroupMembership.StagingPath -ne $StagingPath)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
                 $($LocalizedData.RepGroupMembershipStagingPathMismatchMessage) `
@@ -243,7 +227,8 @@ function Test-TargetResource
         }
 
         # Check the ReadOnly
-        if (($ReadOnly -ne $null) -and ($RepGroupMembership.ReadOnly -ne $ReadOnly)) {
+        if (($PSBoundParameters.ContainsKey('ReadOnly')) `
+            -and ($RepGroupMembership.ReadOnly -ne $ReadOnly)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
                 $($LocalizedData.RepGroupMembershipReadOnlyMismatchMessage) `
@@ -253,7 +238,8 @@ function Test-TargetResource
         }
 
         # Check the PrimaryMember
-        if (($PrimaryMember -ne $null) -and ($RepGroupMembership.PrimaryMember -ne $PrimaryMember)) {
+        if (($PSBoundParameters.ContainsKey('PrimaryMember')) `
+            -and ($RepGroupMembership.PrimaryMember -ne $PrimaryMember)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
                 $($LocalizedData.RepGroupMembershipPrimaryMemberMismatchMessage) `

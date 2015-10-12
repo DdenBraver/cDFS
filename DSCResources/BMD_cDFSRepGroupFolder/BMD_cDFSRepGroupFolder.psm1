@@ -17,6 +17,7 @@ TestingRegGroupFolderMessage=Testing DFS Replication Group "{0}" folder "{1}".
 RepGroupFolderDescriptionMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect Description. Change required.
 RepGroupFolderFileNameToExcludeMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect FileNameToExclude. Change required.
 RepGroupFolderDirectoryNameToExcludeMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect DirectoryNameToExclude. Change required.
+RepGroupFolderDfsnPathMismatchMessage=DFS Replication Group "{0}" folder "{1}" has incorrect DfsnPath. Change required.
 '@
 }
 
@@ -64,6 +65,7 @@ function Get-TargetResource
             Description = $RepGroupFolder.Description
             FilenameToExclude = $RepGroupFolder.FilenameToExclude
             DirectoryNameToExclude = $RepGroupFolder.DirectoryNameToExclude
+            DfsnPath = $RepGroupFolder.DfsnPath
             DomainName = $RepGroupFolder.DomainName
         }
     } Else {       
@@ -108,6 +110,9 @@ function Set-TargetResource
         $DirectoryNameToExclude,
 
         [String]
+        $DfsnPath,
+
+        [String]
         $DomainName
     )
 
@@ -117,23 +122,8 @@ function Set-TargetResource
             -f $GroupName,$FolderName,$DomainName
         ) -join '' )
 
-    # Lookup the existing Replication Group Folder
-    $Splat = @{ GroupName = $GroupName; FolderName = $FolderName }
-    if ($DomainName) {
-        $Splat += @{ DomainName = $DomainName }
-    }
-    if ($Description -ne $null) {
-        $Splat += @{ Description = $Description }
-    }
-    if ($FileNameToExclude -ne $null) {
-        $Splat += @{ FileNameToExclude = $FileNameToExclude }
-    }
-    if ($DirectoryNameToExclude -ne $null) {
-        $Splat += @{ DirectoryNameToExclude = $DirectoryNameToExclude }
-    }
-
-    # Now apply the changes that have been loaded into the splat
-    Set-DfsReplicatedFolder @Splat -ErrorAction Stop
+    # Now apply the changes
+    Set-DfsReplicatedFolder @PSBoundParameters -ErrorAction Stop
 
     Write-Verbose -Message ( @(
         "$($MyInvocation.MyCommand): "
@@ -169,6 +159,9 @@ function Test-TargetResource
         $DirectoryNameToExclude,
 
         [String]
+        $DfsnPath,
+
+        [String]
         $DomainName
     )
 
@@ -197,7 +190,8 @@ function Test-TargetResource
             ) -join '' )
 
         # Check the description
-        if (($Description -ne $null) -and ($RepGroupFolder.Description -ne $Description)) {
+        if (($PSBoundParameters.ContainsKey('Description')) `
+            -and ($RepGroupFolder.Description -ne $Description)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
                 $($LocalizedData.RepGroupFolderDescriptionMismatchMessage) `
@@ -207,7 +201,7 @@ function Test-TargetResource
         }
         
         # Check the FileNameToExclude
-        if (($FileNameToExclude -ne $null) `
+        if (($PSBoundParameters.ContainsKey('FileNameToExclude')) `
             -and ((Compare-Object `
                 -ReferenceObject  $RepGroupFolder.FileNameToExclude `
                 -DifferenceObject $FileNameToExclude).Count -ne 0)) {
@@ -220,13 +214,23 @@ function Test-TargetResource
         }
 
         # Check the DirectoryNameToExclude
-        if (($DirectoryNameToExclude -ne $null) `
+        if (($PSBoundParameters.ContainsKey('DirectoryNameToExclude')) `
             -and ((Compare-Object `
                 -ReferenceObject  $RepGroupFolder.DirectoryNameToExclude `
                 -DifferenceObject $DirectoryNameToExclude).Count -ne 0)) {
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
                 $($LocalizedData.RepGroupFolderDirectoryNameToExcludeMismatchMessage) `
+                    -f $GroupName,$FolderName,$DomainName
+                ) -join '' )
+            $desiredConfigurationMatch = $false
+        }
+
+        if (($PSBoundParameters.ContainsKey('DfsnPath')) `
+            -and ($RepGroupFolder.DfsnPath -ne $DfsnPath)) {
+            Write-Verbose -Message ( @(
+                "$($MyInvocation.MyCommand): "
+                $($LocalizedData.RepGroupFolderDfsnPathMismatchMessage) `
                     -f $GroupName,$FolderName,$DomainName
                 ) -join '' )
             $desiredConfigurationMatch = $false

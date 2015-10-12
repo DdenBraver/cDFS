@@ -63,6 +63,7 @@ This resource is used to configure DFS Replication Group folders. This is an opt
 * **Description**: A description for the Replication Group. Optional.
 * **FilenameToExclude**: An array of file names to exclude from replication. Optional.
 * **DirectoryNameToExclude**: An array of directory names to exclude from replication. Optional.
+* **DfsnPath**: The DFS Namespace Path to this Replication Group folder is mapped to. This does NOT create the Namespace folders, it only sets the name in the folder object. Optional.
 * **DomainName**: The AD domain the Replication Group should created in. Optional.
 
 ### cDFSRepGroupMembership
@@ -265,6 +266,10 @@ configuration Sample_cDFSRepGroup_FullMesh
 ```
 
 ## Versions
+
+### 1.3.1.0
+
+* cDFSRepGroupFolder- DfsnPath parameter added for setting DFS Namespace path mapping.
 
 ### 1.3.0.0
 
