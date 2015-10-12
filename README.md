@@ -75,6 +75,7 @@ This resource is used to configure Replication Group Folder Membership. It is us
 * **ContentPath**: The local content path for this folder member. Required.
 * **StagingPath**: Ths staging path for this folder member. Optional.
 * **ReadOnly**: Used to set this folder member to read only. Optional.
+* **PrimaryMember**: Used to configure this as the Primary Member. Every folder must have at least one primary member for intial replication to take place. Default to false. Optional.
 * **DomainName**: The AD domain the Replication Group should created in. Optional.
 
 #### Examples
@@ -177,6 +178,7 @@ configuration Sample_cDFSRepGroup
             FolderName = 'Software'
             ComputerName = 'FileServer1'
             ContentPath = 'd:\Public\Software'
+            PrimaryMember = $true
             PSDSCRunAsCredential = $Credential
             DependsOn = '[cDFSRepGroupFolder]RGSoftwareFolder'
         } # End of RGPublicSoftwareFS1 Resource
@@ -243,6 +245,7 @@ configuration Sample_cDFSRepGroup_FullMesh
             FolderName = 'Software'
             ComputerName = 'FileServer1'
             ContentPath = 'd:\Public\Software'
+            PrimaryMember = $true
             PSDSCRunAsCredential = $Credential
             DependsOn = '[cDFSRepGroupFolder]RGSoftwareFolder'
         } # End of RGPublicSoftwareFS1 Resource
@@ -262,6 +265,11 @@ configuration Sample_cDFSRepGroup_FullMesh
 ```
 
 ## Versions
+
+### 1.3.0.0
+
+* cDFSRepGroup- If ContentPaths is set, PrimaryMember is set to first member in the Members array.
+* cDFSRRepGroupMembership- PrimaryMembers property added so that Primary Member can be set.
 
 ### 1.2.1.0
 

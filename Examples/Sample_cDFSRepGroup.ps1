@@ -60,6 +60,7 @@ configuration Sample_cDFSRepGroup
             FolderName = 'Software'
             ComputerName = 'FileServer1'
             ContentPath = 'd:\Public\Software'
+            PrimaryMember = $true
             PSDSCRunAsCredential = $Credential
             DependsOn = '[cDFSRepGroupFolder]RGSoftwareFolder'
         } # End of RGPublicSoftwareFS1 Resource

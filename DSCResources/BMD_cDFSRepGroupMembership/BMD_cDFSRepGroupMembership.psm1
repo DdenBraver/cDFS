@@ -18,6 +18,7 @@ TestingRegGroupMembershipMessage=Testing DFS Replication Group "{0}" folder "{1}
 RepGroupMembershipContentPathMismatchMessage=DFS Replication Group "{0}" folder "{1}" on "{2}" has incorrect ContentPath. Change required.
 RepGroupMembershipStagingPathMismatchMessage=DFS Replication Group "{0}" folder "{1}" on "{2}" has incorrect StagingPath. Change required.
 RepGroupMembershipReadOnlyMismatchMessage=DFS Replication Group "{0}" folder "{1}" on "{2}" has incorrect ReadOnly. Change required.
+RepGroupMembershipPrimaryMemberismatchMessage=DFS Replication Group "{0}" folder "{1}" on "{2}" has incorrect PrimaryMember. Change required.
 '@
 }
 
@@ -72,6 +73,7 @@ function Get-TargetResource
             StagingPath = $RepGroupMembership.StagingPath
             ConflictAndDeletedPath = $RepGroupMembership.ConflictAndDeletedPath
             ReadOnly = $RepGroupMembership.ReadOnly
+            PrimaryMember = $RepGroupMembership.PrimaryMember
             DomainName = $RepGroupMembership.DomainName
         }
     } Else {       
@@ -119,6 +121,9 @@ function Set-TargetResource
         [Boolean]
         $ReadOnly,
 
+        [Boolean]
+        $PrimaryMember,
+
         [String]
         $DomainName
     )
@@ -142,6 +147,9 @@ function Set-TargetResource
     }
     if ($ReadOnly -ne $null) {
         $Splat += @{ ReadOnly = $ReadOnly }
+    }
+    if ($PrimaryMember -ne $null) {
+        $Splat += @{ PrimaryMember = $PrimaryMember }
     }
 
     # Now apply the changes that have been loaded into the splat
@@ -182,6 +190,9 @@ function Test-TargetResource
 
         [Boolean]
         $ReadOnly,
+
+        [Boolean]
+        $PrimaryMember,
 
         [String]
         $DomainName
@@ -236,6 +247,16 @@ function Test-TargetResource
             Write-Verbose -Message ( @(
                 "$($MyInvocation.MyCommand): "
                 $($LocalizedData.RepGroupMembershipReadOnlyMismatchMessage) `
+                    -f $GroupName,$FolderName,$ComputerName,$DomainName
+                ) -join '' )
+            $desiredConfigurationMatch = $false
+        }
+
+        # Check the PrimaryMember
+        if (($PrimaryMember -ne $null) -and ($RepGroupMembership.PrimaryMember -ne $PrimaryMember)) {
+            Write-Verbose -Message ( @(
+                "$($MyInvocation.MyCommand): "
+                $($LocalizedData.RepGroupMembershipPrimaryMemberMismatchMessage) `
                     -f $GroupName,$FolderName,$ComputerName,$DomainName
                 ) -join '' )
             $desiredConfigurationMatch = $false

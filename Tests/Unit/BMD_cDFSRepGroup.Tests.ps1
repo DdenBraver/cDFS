@@ -119,7 +119,11 @@ InModuleScope $DSCResourceName {
         StagingPath = 'd:\public\software\DfsrPrivate\Staging\'
         ConflictAndDeletedPath = 'd:\public\software\DfsrPrivate\ConflictAndDeleted\'
         ReadOnly = $False
+        PrimaryMember = $True
     }
+    $Global:MockRepGroupMembershipNotPrimary = $Global:MockRepGroupMembership.Clone()
+    $Global:MockRepGroupMembershipNotPrimary.PrimaryMember = $False
+
     $Global:MockRepGroupConnection = [PSObject]@{
         GroupName = $Global:RepGroupConnections[0].GroupName
         SourceComputerName = $Global:RepGroupConnections[0].SourceComputerName
@@ -692,6 +696,43 @@ InModuleScope $DSCResourceName {
                 Assert-MockCalled -commandName Set-DfsrMembership -Exactly 0
             }
         }
+
+        Context 'Replication Group Content Path is set and does not need to be changed but primarymember does' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock New-DfsReplicationGroup
+            Mock Set-DfsReplicationGroup
+            Mock Remove-DfsReplicationGroup
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Add-DfsrMember
+            Mock Remove-DfsrMember
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock New-DfsReplicatedFolder
+            Mock Remove-DfsReplicatedFolder
+            Mock Get-DfsrMembership -MockWith { @($Global:MockRepGroupMembershipNotPrimary) }
+            Mock Set-DfsrMembership
+
+            It 'should not throw error' {
+                { 
+                    $Splat = $Global:RepGroupContentPath.Clone()
+                    Set-TargetResource @Splat
+                } | Should Not Throw
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Set-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicationGroup -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Add-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsrMember -Exactly 0
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName New-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Remove-DfsReplicatedFolder -Exactly 0
+                Assert-MockCalled -commandName Get-DfsrMembership -Exactly 1
+                Assert-MockCalled -commandName Set-DfsrMembership -Exactly 1
+            }
+        }
     }
 
 ######################################################################################
@@ -943,7 +984,7 @@ InModuleScope $DSCResourceName {
             }
         }
 
-        Context 'Replication Group Content Path is set and the same' {
+        Context 'Replication Group Content Path is set and the same and PrimaryMember is correct' {
             
             Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
             Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
@@ -961,6 +1002,27 @@ InModuleScope $DSCResourceName {
                 Assert-MockCalled -commandName Get-DfsrMembership -Exactly 1
             }
         }
+
+        Context 'Replication Group Content Path is set and the same and PrimaryMember is not correct' {
+            
+            Mock Get-DfsReplicationGroup -MockWith { @($Global:MockRepGroup) }
+            Mock Get-DfsrMember -MockWith { return $Global:MockRepGroupMember }
+            Mock Get-DfsReplicatedFolder -MockWith { return $Global:MockRepGroupFolder }
+            Mock Get-DfsrMembership -MockWith { @($Global:MockRepGroupMembershipNotPrimary) }
+
+            It 'should return false' {
+                $Splat = $Global:RepGroupContentPath.Clone()
+
+                Test-TargetResource @Splat | Should Be $False
+            }
+            It 'should call expected Mocks' {
+                Assert-MockCalled -commandName Get-DfsReplicationGroup -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrMember -Exactly 1
+                Assert-MockCalled -commandName Get-DfsReplicatedFolder -Exactly 1
+                Assert-MockCalled -commandName Get-DfsrMembership -Exactly 1
+            }
+        }
+
     }
 
 ######################################################################################

@@ -262,16 +262,18 @@ function Set-TargetResource
                 $ContentPath = $ContentPaths[$i]
                 if ($ContentPath) {
                      foreach ($membership in $memberships) {
-                        if (($membership.ContentPath -eq $ContentPath) `
-                            -or ($membership.FolderName -ne $Folders[$i])){
-                            # Don't check this entry because it doesn't need a change
-                            # or is for a different folder
+                        [Boolean]$primarymember = ($membership.ComputerName -eq $Members[0])
+                        if (($membership.FolderName -ne $Folders[$i]) `
+                            -or (($membership.ContentPath -eq $ContentPath) `
+                            -and ($membership.PrimaryMember -eq $primarymember))) {
+                            # Don't update this membership
                             continue
                         }
                         # The Content Path for this member needs to be set
                         Set-DfsrMembership @Splat `
                             -FolderName $membership.FolderName `
                             -ComputerName $membership.ComputerName `
+                            -PrimaryMember $primarymember `
                             -ContentPath $ContentPath
                         Write-Verbose -Message ( @(
                             "$($MyInvocation.MyCommand): "
@@ -449,10 +451,11 @@ function Test-TargetResource
                     $ContentPath = $ContentPaths[$i]
                     if ($ContentPath) {
                         Foreach ($membership in $memberships) {
-                            if (($membership.ContentPath -eq $ContentPath) `
-                                -or ($membership.FolderName -ne $Folders[$i])){
-                                # Don't check this entry because it doesn't need a change
-                                # or is for a different folder
+                            [Boolean]$primarymember = ($membership.ComputerName -eq $Members[0])
+                            if (($membership.FolderName -ne $Folders[$i]) `
+                                -or (($membership.ContentPath -eq $ContentPath) `
+                                -and ($membership.PrimaryMember -eq $primarymember))) {
+                                # This membership is in the correct state.
                                 continue
                             }
                             Write-Verbose -Message ( @(
