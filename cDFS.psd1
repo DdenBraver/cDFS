@@ -1,6 +1,6 @@
 @{
 # Version number of this module.
-ModuleVersion = '1.3.1.0'
+ModuleVersion = '1.3.2.0'
 
 # ID used to uniquely identify this module
 GUID = '3bcb9c66-ea0b-4675-bd46-c390a382c388'
@@ -28,4 +28,28 @@ FunctionsToExport = '*'
 
 # Cmdlets to export from this module
 CmdletsToExport = '*'
+
+# Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
+PrivateData = @{
+
+    PSData = @{
+
+        # Tags applied to this module. These help with module discovery in online galleries.
+        # Tags = @('DSC','Desired State Configuration','DSC Resource','DFS','Distributed File System','Replication Group')
+
+        # A URL to the license for this module.
+        # LicenseUri = 'https://github.com/PlagueHO/cDFS/blob/master/LICENSE'
+
+        # A URL to the main website for this project.
+        # ProjectUri = 'https://github.com/PlagueHO/cDFS'
+
+        # A URL to an icon representing this module.
+        # IconUri = ''
+
+        # ReleaseNotes of this module
+        # ReleaseNotes = ''
+
+    } # End of PSData hashtable
+
+} # End of PrivateData hashtable
 }

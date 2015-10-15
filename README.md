@@ -267,6 +267,10 @@ configuration Sample_cDFSRepGroup_FullMesh
 
 ## Versions
 
+### 1.3.2.0
+
+* Documentation and Module Manifest Update only.
+
 ### 1.3.1.0
 
 * cDFSRepGroupFolder- DfsnPath parameter added for setting DFS Namespace path mapping.
