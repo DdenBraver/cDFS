@@ -7,7 +7,7 @@ install:
   - cinst -y pester
   - git clone https://github.com/PlagueHO/DscResource.Tests
   - ps: Import-Module .\DscResource.Tests\TestHelper.psm1 -force
-  - ps: install-windowsfeature fs-resource-manager
+  - ps: install-windowsfeature FS-DFS-Namespace,FS-DFS-Replication,RSAT-DFS-Mgmt-Con
 
 #---------------------------------# 
 #      build configuration        # 
