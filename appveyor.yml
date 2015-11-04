@@ -5,14 +5,10 @@ os: Unstable
 version: 1.3.2.{build}
 install: 
   - cinst -y pester
-  - git clone https://github.com/PowerShell/DscResource.Tests
-  - ps: Push-Location
-  - cd DscResource.Tests
-  - ps: Import-Module .\TestHelper.psm1 -force
-  - ps: Pop-Location
-  - ps: Get-PackageProvider -name nuget -ForceBootStrap -Force
-  - ps: install-windowsfeature FS-DFS-Namespace,FS-DFS-Replication,RSAT-DFS-Mgmt-Con
-  
+  - git clone https://github.com/PlagueHO/DscResource.Tests
+  - ps: Import-Module .\DscResource.Tests\TestHelper.psm1 -force
+  - ps: install-windowsfeature fs-resource-manager
+
 #---------------------------------# 
 #      build configuration        # 
 #---------------------------------# 
